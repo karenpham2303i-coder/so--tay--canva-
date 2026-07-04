@@ -2,36 +2,39 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Hệ Thống Phân Quyền Sổ Tay</title>
+    <title>Hệ Thống Phân Quyền</title>
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-        .modal { display: none; position: fixed; top: 20%; right: 20px; background: #1e293b; padding: 20px; border: 2px solid #f59e0b; border-radius: 8px; }
+        .modal { display: none; position: fixed; top: 20%; right: 20px; background: #1e293b; padding: 20px; border: 2px solid #f59e0b; border-radius: 8px; z-index: 9999; }
     </style>
 </head>
 <body>
-    
     <h2 id="roomDisplay">Đang tải...</h2>
-    <div id="roleDisplay">Đang xác định vai trò...</div>
+    <div id="roleDisplay">Đang xác định...</div>
 
     <div id="approvalModal" class="modal">
-        <h3>Ai đó muốn vào phòng!</h3>
+        <h3>Yêu cầu vào phòng!</h3>
         <p id="guestIdText"></p>
-        <button onclick="approveGuest('editor')" style="background: #10b981; color: white;">Cho Sửa</button>
-        <button onclick="approveGuest('viewer')" style="background: #3b82f6; color: white;">Chỉ xem</button>
+        <button onclick="approveGuest('editor')" style="background: #10b981;">Cho Sửa</button>
+        <button onclick="approveGuest('viewer')" style="background: #3b82f6;">Chỉ xem</button>
     </div>
 
     <script>
         const ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
         const urlParams = new URLSearchParams(window.location.search);
         let roomCode = urlParams.get('room');
-        let myClientId = 'Guest_' + Math.floor(Math.random() * 1000);
+        let myClientId = 'User_' + Math.floor(Math.random() * 1000);
         let currentGuest = null;
 
-        // 1. Phân biệt vai trò ngay từ đầu
-        let isOwner = !roomCode; 
+        // 1. Kiểm tra xem mình đã từng làm chủ phòng này chưa
+        let isOwner = localStorage.getItem('is_owner_' + roomCode) === 'true';
+
+        // 2. Nếu không có roomCode, tạo phòng mới và tự gán là chủ
         if (!roomCode) {
             roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+            isOwner = true;
+            localStorage.setItem('is_owner_' + roomCode, 'true');
             window.history.pushState({}, '', '?room=' + roomCode);
         }
 
@@ -39,29 +42,20 @@
         document.getElementById("roomDisplay").innerText = "Phòng số: " + roomCode;
         document.getElementById("roleDisplay").innerHTML = isOwner ? "<b>Bạn là CHỦ PHÒNG</b>" : "<b>Bạn là Khách</b>";
 
-        // 2. Nếu là Khách: Tự động gửi tin nhắn "Xin vào"
+        // 3. Nếu là khách, gửi tín hiệu xin vào
         if (!isOwner) {
             channel.publish('request_access', { clientId: myClientId });
         }
 
-        // 3. Nếu là Chủ phòng: Lắng nghe tin nhắn "Xin vào"
-        if (isOwner) {
-            channel.subscribe('request_access', (msg) => {
+        // 4. Chủ phòng lắng nghe
+        channel.subscribe('request_access', (msg) => {
+            if (isOwner) {
                 currentGuest = msg.data.clientId;
-                document.getElementById("guestIdText").innerText = "Thiết bị: " + currentGuest;
+                document.getElementById("guestIdText").innerText = "Khách: " + currentGuest;
                 document.getElementById("approvalModal").style.display = "block";
-            });
-        }
-
-        // 4. Lắng nghe kết quả từ Chủ phòng
-        channel.subscribe('grant_access', (msg) => {
-            if (msg.data.targetId === myClientId) {
-                document.getElementById("roleDisplay").innerHTML = "<b>Quyền của bạn: " + msg.data.role + "</b>";
-                alert("Chủ phòng đã cấp quyền: " + msg.data.role);
             }
         });
 
-        // 5. Hàm Duyệt
         function approveGuest(role) {
             channel.publish('grant_access', { targetId: currentGuest, role: role });
             document.getElementById("approvalModal").style.display = "none";
