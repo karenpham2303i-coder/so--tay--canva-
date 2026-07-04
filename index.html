@@ -236,7 +236,6 @@
             "fa-star", "fa-heart", "fa-crown", "fa-fire", "fa-bolt", "fa-gift", "fa-cat", "fa-mug-hot"
         ];
 
-        // Khởi tạo hệ thống lưu trữ đồng bộ mã phòng qua URL công khai
         function initAppConfig() {
             const urlParams = new URLSearchParams(window.location.search);
             roomCode = urlParams.get('room');
@@ -440,9 +439,16 @@
             let title = document.getElementById("coverTitleField").value;
             let color = document.getElementById("coverColorField").value;
 
-            if (notebook.pages[leftIdx]?.isCover) { notebook.pages[leftIdx].title = title; notebook.pages[leftIdx].bg = color; }
-            else if (notebook.pages[rightIdx]?.isCover) { notebook.pages[rightIdx].title = title; notebook.pages[rightIdx].bg = color; }
-            saveData(); renderBook3D();
+            if (notebook.pages[leftIdx]?.isCover) { 
+                notebook.pages[leftIdx].title = title; 
+                notebook.pages[leftIdx].bg = color; 
+            }
+            else if (notebook.pages[rightIdx]?.isCover) { 
+                notebook.pages[rightIdx].title = title; 
+                notebook.pages[rightIdx].bg = color; 
+            }
+            saveData(); 
+            renderBook3D();
         }
 
         function applyFont(font) { if (!selectedId) return; getActiveEl().fontFamily = font; saveData(); renderBook3D(); }
@@ -487,7 +493,6 @@
             });
         }
 
-        // CHỨC NĂNG XUẤT BẢN THÀNH ẢNH TOÀN DIỆN KHÔNG LỖI
         function downloadBookImage() {
             clearSelection();
             setTimeout(() => {
