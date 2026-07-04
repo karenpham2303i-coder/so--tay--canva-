@@ -2,46 +2,36 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Sổ Tay 3D - Hệ Thống Cấp Quyền</title>
-    <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-        .box { background: #1e293b; padding: 20px; border-radius: 10px; border: 1px solid #475569; }
-    </style>
+    <title>Sổ Tay 3D - Hệ Thống Ổn Định</title>
 </head>
-<body>
-    <div class="box">
-        <h2 id="title">Hệ thống phân quyền</h2>
-        <div id="status">Đang tải...</div>
-        <hr>
-        <div id="controls" style="display:none;">
-            <p>Nhập "Mã bí mật" để mở quyền chỉnh sửa:</p>
-            <input type="password" id="passInput">
-            <button onclick="checkPassword()">Xác nhận</button>
-        </div>
+<body style="background:#0f172a; color:white; font-family:sans-serif; padding:20px;">
+    
+    <h2>Hệ thống Sổ tay 3D</h2>
+    <div id="status">Đang xác định vai trò...</div>
+    
+    <div id="editorTools" style="display:none; margin-top:20px; padding:20px; border:2px solid #10b981;">
+        <h3>Công cụ chỉnh sửa (Dành cho Chủ phòng)</h3>
+        <button>Thêm trang</button>
+        <button>Xóa trang</button>
     </div>
 
     <script>
-        // 1. Chỉ chủ phòng mới biết mật khẩu này
-        const SECRET_PASS = "123456"; 
+        // 1. Kiểm tra vai trò
+        let isOwner = localStorage.getItem('is_owner') === 'true';
 
-        // 2. Kiểm tra trạng thái đã đăng nhập chưa
-        if (localStorage.getItem('isAuthorized') === 'true') {
-            document.getElementById("status").innerHTML = "<b>Quyền:</b> Bạn là CHỈNH SỬA VIÊN (Editor).";
-        } else {
-            document.getElementById("status").innerHTML = "<b>Quyền:</b> Bạn là NGƯỜI XEM (Viewer).";
-            document.getElementById("controls").style.display = "block";
+        // 2. Nếu là lần đầu tiên, tự nhận là Chủ phòng
+        if (!localStorage.getItem('is_owner')) {
+            localStorage.setItem('is_owner', 'true');
+            isOwner = true;
         }
 
-        // 3. Hàm cấp quyền thủ công
-        function checkPassword() {
-            let p = document.getElementById("passInput").value;
-            if (p === SECRET_PASS) {
-                localStorage.setItem('isAuthorized', 'true');
-                alert("Đã cấp quyền chỉnh sửa!");
-                location.reload();
-            } else {
-                alert("Mã sai!");
-            }
+        // 3. Hiển thị UI theo quyền
+        const statusDiv = document.getElementById("status");
+        if (isOwner) {
+            statusDiv.innerHTML = "<b>Quyền của bạn:</b> Chủ phòng (Có thể chỉnh sửa)";
+            document.getElementById("editorTools").style.display = "block";
+        } else {
+            statusDiv.innerHTML = "<b>Quyền của bạn:</b> Khách (Chỉ được xem)";
         }
     </script>
 </body>
