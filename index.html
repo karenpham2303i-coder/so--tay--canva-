@@ -2,87 +2,79 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Tay 3D - Hệ Thống Phân Quyền</title>
+    <title>Sổ Tay 3D - Hệ Thống Bảo Mật</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
-        /* ... Các style cũ giữ nguyên ... */
-        /* THÊM/CẬP NHẬT STYLE CHO KHUNG DUYỆT */
+        body { margin: 0; background: #0f172a; color: white; font-family: sans-serif; }
         .owner-modal {
-            position: fixed; bottom: 30px; right: 30px; background: #1e293b; 
-            border: 2px solid var(--owner-color); padding: 20px; border-radius: 12px; 
-            width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 9999; 
-            display: none; flex-direction: column; gap: 12px;
+            position: fixed; bottom: 30px; right: 30px; background: #1e293b;
+            border: 2px solid #f59e0b; padding: 20px; border-radius: 12px;
+            width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 9999; display: none; flex-direction: column; gap: 10px;
         }
+        .modal-actions { display: flex; gap: 5px; }
+        .modal-actions button { flex: 1; padding: 8px; border: none; cursor: pointer; color: white; border-radius: 4px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<script>
-    // ... (Giữ nguyên các biến khai báo cũ)
+    <div id="roleDisplay" style="padding: 20px;">Đang kết nối hệ thống...</div>
 
-    function connectRealtime() {
-        channel = ably.channels.get('sotay_3d_room_' + roomCode);
+    <div class="owner-modal" id="approvalModal">
+        <h4 style="margin:0;"><i class="fa-solid fa-user-check"></i> Phê duyệt thành viên</h4>
+        <p id="approvalModalText" style="font-size: 13px;"></p>
+        <div class="modal-actions">
+            <button style="background: #10b981;" onclick="approveGuest('editor')">Cho Sửa</button>
+            <button style="background: #3b82f6;" onclick="approveGuest('viewer')">Xem</button>
+            <button style="background: #ef4444;" onclick="approveGuest('block')">Từ chối</button>
+        </div>
+    </div>
 
-        // LẮNG NGHE YÊU CẦU TỪ KHÁCH
+    <script>
+        const ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
+        let roomCode = new URLSearchParams(window.location.search).get('room') || Math.floor(100000 + Math.random() * 900000).toString();
+        let myClientId = 'user_' + Math.random().toString(36).substr(2, 5);
+        let myRole = 'pending';
+        let currentPendingGuest = null;
+
+        // Tự động set URL
+        if (!window.location.search.includes('room')) {
+            window.history.pushState({}, '', '?room=' + roomCode);
+        }
+
+        // Kiểm tra quyền sở hữu
+        if (localStorage.getItem('owner_of_room_' + roomCode) === 'true') {
+            myRole = 'owner';
+        } else if (!window.location.search.includes('room')) {
+            myRole = 'owner';
+            localStorage.setItem('owner_of_room_' + roomCode, 'true');
+        }
+
+        const channel = ably.channels.get('room_' + roomCode);
+
         channel.subscribe('permission_channel', (msg) => {
-            let data = msg.data;
-
-            // Nếu bạn là chủ phòng và nhận được yêu cầu
-            if (myRole === 'owner' && data.type === 'request_access') {
-                currentPendingGuest = data.clientId;
-                
-                // Hiển thị khung duyệt quyền
-                const modal = document.getElementById("approvalModal");
-                modal.style.display = "flex";
-                document.getElementById("approvalModalText").innerText = 
-                    `Thiết bị [${data.clientId}] muốn vào phòng. Bạn cho phép họ làm gì?`;
+            if (myRole === 'owner' && msg.data.type === 'request_access') {
+                currentPendingGuest = msg.data.clientId;
+                document.getElementById("approvalModal").style.display = "flex";
+                document.getElementById("approvalModalText").innerText = "Thiết bị " + msg.data.clientId + " muốn vào phòng.";
             }
-
-            // Nếu bạn là khách và nhận được phản hồi duyệt
-            if (data.type === 'grant_access' && data.targetId === myClientId) {
-                myRole = data.role;
-                applyPermissionUI(myRole === 'editor' || myRole === 'owner');
-                document.getElementById("roleDisplay").innerText = "Đã được cấp quyền: " + myRole;
+            if (msg.data.type === 'grant_access' && msg.data.targetId === myClientId) {
+                myRole = msg.data.role;
+                document.getElementById("roleDisplay").innerText = "Quyền của bạn: " + myRole;
             }
         });
 
-        // TỰ ĐỘNG GỬI YÊU CẦU KHI KHÁCH VÀO
         if (myRole === 'pending') {
-            channel.publish('permission_channel', { 
-                type: 'request_access', 
-                clientId: myClientId 
-            });
+            channel.publish('permission_channel', { type: 'request_access', clientId: myClientId });
+        } else {
+            document.getElementById("roleDisplay").innerText = "Bạn là Chủ sở hữu (Owner)";
         }
-    }
 
-    // HÀM DUYỆT QUYỀN (CHỈ DÀNH CHO OWNER)
-    function approveGuest(roleType) {
-        if (currentPendingGuest) {
-            // Gửi lệnh duyệt ngược lại cho khách
-            channel.publish('permission_channel', { 
-                type: 'grant_access', 
-                targetId: currentPendingGuest, 
-                role: roleType 
-            });
-            
-            // Ẩn bảng thông báo
+        function approveGuest(roleType) {
+            channel.publish('permission_channel', { type: 'grant_access', targetId: currentPendingGuest, role: roleType });
             document.getElementById("approvalModal").style.display = "none";
-            currentPendingGuest = null;
         }
-    }
-</script>
-
-<div class="owner-modal" id="approvalModal">
-    <h4><i class="fa-solid fa-user-check"></i> Phê duyệt thành viên</h4>
-    <p id="approvalModalText"></p>
-    <div class="modal-actions">
-        <button style="background: #10b981;" onclick="approveGuest('editor')">Cho Sửa</button>
-        <button style="background: #3b82f6;" onclick="approveGuest('viewer')">Xem</button>
-        <button style="background: #ef4444;" onclick="approveGuest('block')">Từ chối</button>
-    </div>
-</div>
-
+    </script>
 </body>
 </html>
