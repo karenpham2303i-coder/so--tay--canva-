@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Tay 3D - Phiên Bản Premium Đồng Bộ Bảo Mật</title>
+    <title>Sổ Tay 3D - Phiên Bản Hoàn Thiện Không Lỗi</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
-    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Comfortaa:wght@400;700&family=Dancing+Script:wght@700&family=Lobster&family=Montserrat:wght@400;700&family=Noto+Sans+VN:wght@400;700&family=Pacifico&family=Playfair+Display:ital,wght@0,700;1,400&family=Caveat:wght@700&family=Patrick+Hand&family=Amatic+SC:wght@700&family=Quicksand:wght@500;700&family=Bungee&display=swap" rel="stylesheet">
     
     <style>
         :root {
             --sidebar-width: 380px;
             --primary: #6366f1;
-            --owner-color: #f59e0b;
         }
         * { box-sizing: border-box; user-select: none; }
         body {
@@ -38,13 +36,13 @@
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-secondary { background: #10b981; }
         .btn-danger { background: #ef4444; }
+        .btn-warning { background: #f59e0b; }
 
         input, select, textarea {
             width: 100%; padding: 8px 12px; border: 1px solid #475569; background: #1e293b;
             color: white; border-radius: 6px; box-sizing: border-box; font-size: 13px; margin-bottom: 5px;
         }
 
-        /* THIẾT KẾ MỤC ICON FLATICON */
         .icon-search-box { display: flex; gap: 5px; margin-bottom: 8px; }
         .flaticon-hint { font-size: 11px; color: #94a3b8; margin-top: 4px; display: block; line-height: 1.3; }
         .flaticon-link { color: #38bdf8; text-decoration: none; font-weight: bold; }
@@ -75,7 +73,7 @@
             transition: opacity 0.3s;
         }
 
-        /* LỚP SHEET GIẤY LẬT ĐỘNG (0.75s chuẩn theo yêu cầu ban đầu của bạn) */
+        /* LỚP SHEET GIẤY LẬT ĐỘNG (0.75s) */
         .book-page-sheet {
             position: absolute; width: 50%; height: 100%; top: 0; transform-style: preserve-3d;
             transition: transform 0.75s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s;
@@ -83,21 +81,15 @@
         }
         .book-page-sheet.left-side { left: 0; transform-origin: right center; border-radius: 12px 2px 2px 12px; }
         .book-page-sheet.right-side { left: 50%; transform-origin: left center; border-radius: 2px 12px 12px 2px; }
-        .book-page-sheet.flipped-to-right.left-side { transform: rotateY(180deg); z-index: 50; }
-        .book-page-sheet.flipped-to-left.right-side { transform: rotateY(-180deg); z-index: 50; }
 
         .page-face {
             position: absolute; width: 100%; height: 100%; top: 0; left: 0; backface-visibility: hidden;
             padding: 45px; overflow: hidden; transition: background-color 0.3s, opacity 0.3s;
         }
-        .page-face.front-face { z-index: 2; }
-        .page-face.back-face { transform: rotateY(180deg); z-index: 1; }
 
         /* Đổ bóng gờ giấy */
-        .left-side .front-face { border-radius: 12px 2px 2px 12px; box-shadow: inset -15px 0 20px rgba(0,0,0,0.05); }
-        .left-side .back-face { border-radius: 2px 12px 12px 2px; box-shadow: inset 15px 0 20px rgba(0,0,0,0.05); }
-        .right-side .front-face { border-radius: 2px 12px 12px 2px; box-shadow: inset 15px 0 20px rgba(0,0,0,0.05); }
-        .right-side .back-face { border-radius: 12px 2px 2px 12px; box-shadow: inset -15px 0 20px rgba(0,0,0,0.05); }
+        .left-side .page-face { border-radius: 12px 2px 2px 12px; box-shadow: inset -15px 0 20px rgba(0,0,0,0.05); }
+        .right-side .page-face { border-radius: 2px 12px 12px 2px; box-shadow: inset 15px 0 20px rgba(0,0,0,0.05); }
 
         /* THÀNH PHẦN KÉO THẢ */
         .element { position: absolute; cursor: move; padding: 5px; border: 1px dashed transparent; }
@@ -109,12 +101,10 @@
         }
         .element.selected .delete-btn { display: flex; }
 
-        .element-text { font-size: 18px; outline: none; word-break: break-word; user-select: text; min-width: 60px; line-height: 1.4; }
-        .element-sticker { font-size: 50px; line-height: 1; display: inline-block; }
+        .element-text { font-size: 18px; outline: none; word-break: break-word; user-select: text; min-width: 60px; line-height: 1.4; color: inherit; }
         .element-img { width: 140px; height: auto; pointer-events: none; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); display: block; }
-        .element-icon { font-size: 48px; line-height: 1; color: var(--primary); }
+        .element-icon { font-size: 48px; line-height: 1; }
 
-        /* KHU VỰC THÔNG BÁO QUYỀN */
         .room-bar {
             position: absolute; top: 20px; left: 20px; background: #1e293b; padding: 10px 15px;
             border-radius: 6px; display: flex; flex-direction: column; gap: 3px; border: 1px solid #334155; font-size: 13px; z-index: 200;
@@ -123,60 +113,43 @@
         .left-side .page-num { left: 20px; } .right-side .page-num { right: 20px; }
         .cover-style { color: #ffffff !important; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .invisible-sheet { opacity: 0 !important; pointer-events: none !important; box-shadow: none !important; }
-
-        /* DIALOG XIN PHÉP TRUY CẬP */
-        .owner-modal {
-            position: absolute; bottom: 20px; right: 20px; background: #1e293b; border: 2px solid var(--owner-color);
-            padding: 15px; border-radius: 8px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            z-index: 500; display: none; flex-direction: column; gap: 10px;
-        }
-        .owner-modal h4 { margin: 0; color: var(--owner-color); font-size: 14px; display: flex; align-items: center; gap: 8px; }
-        .modal-actions { display: flex; gap: 5px; }
-        .modal-actions button { flex: 1; padding: 6px; font-size: 12px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <h2><i class="fa-solid fa-book-open" style="color:var(--primary)"></i> Sổ Tay 3D Cao Cấp</h2>
+        <h2><i class="fa-solid fa-book-open" style="color:var(--primary)"></i> Sổ Tay 3D Toàn Quyền</h2>
         
-        <div class="section" style="background: #0f172a; border-color: #334155;">
-            <span class="label"><i class="fa-solid fa-shield-halved"></i> Vai trò hệ thống:</span>
-            <div id="roleDisplay" style="font-weight: bold; color: #ef4444; margin-bottom: 5px;"><i class="fa-solid fa-user-lock"></i> Đang kết nối mạng...</div>
-            <div id="ownerSettings" style="display: none;">
-                <label class="label" style="color: var(--owner-color); margin-top: 5px;">Cấu hình mặc định phòng:</label>
-                <select id="defaultGuestPermission" onchange="changeDefaultPermission(this.value)">
-                    <option value="pending">Phải được tôi duyệt mới được vào (Bảo mật)</option>
-                    <option value="viewer">Cho phép mọi người tự do vào Xem</option>
-                </select>
-            </div>
+        <div class="section" style="background: #10b981; border-color: #059669;">
+            <span class="label" style="color: white;"><i class="fa-solid fa-unlock-keyhole"></i> Chế độ chia sẻ:</span>
+            <div style="font-weight: bold; color: white;"><i class="fa-solid fa-earth-asia"></i> Ai có link cũng sửa được</div>
         </div>
 
-        <div class="section edit-gate" id="coverConfigSection" style="display:none; background: #2e1065; border-color: #6b21a8;">
+        <div class="section" id="coverConfigSection" style="background: #2e1065; border-color: #6b21a8;">
             <span class="label" style="color:#d8b4fe;"><i class="fa-solid fa-star"></i> Thiết kế trang bìa:</span>
             <input type="text" id="coverTitleField" placeholder="Nhập tên sổ tay..." oninput="updateCoverData()">
             <input type="color" id="coverColorField" oninput="updateCoverData()">
         </div>
 
-        <div class="section edit-gate">
+        <div class="section">
             <span class="label">Quản lý trang nội dung:</span>
             <button class="btn btn-secondary" onclick="addPagePair()"><i class="fa-solid fa-plus"></i> Chèn 2 Trang Mới</button>
             <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelectedPagePair()"><i class="fa-solid fa-trash"></i> Xóa cặp trang này</button>
         </div>
 
-        <div class="section edit-gate">
+        <div class="section">
             <span class="label">Thêm nội dung:</span>
             <button class="btn" onclick="addNewElement('text', 'Nhấp đúp viết chữ...')"><i class="fa-solid fa-font"></i> Chèn Khung Chữ</button>
         </div>
 
-        <div class="section edit-gate">
+        <div class="section">
             <span class="label"><i class="fa-solid fa-images"></i> Chèn hình ảnh thông minh:</span>
             <button class="btn btn-secondary" onclick="document.getElementById('fileImageLoader').click()"><i class="fa-solid fa-file-arrow-up"></i> Tải ảnh lên từ máy</button>
             <input type="file" id="fileImageLoader" accept="image/*" style="display: none;" onchange="uploadLocalImage(event)">
-            <span class="flaticon-hint">💡 <b>Mẹo nâng cao:</b> Bạn có thể ấn <b>Ctrl + V</b> trên màn hình để dán thẳng ảnh chụp màn hình vào cuốn sách!</span>
+            <span class="flaticon-hint">💡 <b>Mẹo:</b> Nhấn <b>Ctrl + V</b> tại đây để dán trực tiếp hình chụp màn hình!</span>
         </div>
 
-        <div class="section edit-gate">
+        <div class="section">
             <span class="label"><i class="fa-solid fa-icons"></i> Thư viện biểu tượng trang trí:</span>
             <div class="icon-search-box">
                 <input type="text" id="iconSearchInput" placeholder="Tìm kiếm icon (Ví dụ: heart, star...)" onkeyup="filterIcons()">
@@ -191,20 +164,17 @@
                 <div class="asset-item" title="Cat" onclick="addNewElement('icon', 'fa-solid fa-cat')"><i class="fa-solid fa-cat"></i></div>
                 <div class="asset-item" title="Coffee" onclick="addNewElement('icon', 'fa-solid fa-mug-hot')"><i class="fa-solid fa-mug-hot"></i></div>
             </div>
-            <span class="flaticon-hint">Tìm icon độc quyền bên <a href="https://www.flaticon.com" target="_blank" class="flaticon-link">Flaticon.com <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
         </div>
 
-        <div class="section edit-gate" id="editorPanel" style="display:none; background: #475569;">
+        <div class="section" id="editorPanel" style="background: #475569;">
             <span class="label" style="color:#67e8f9;"><i class="fa-solid fa-sliders"></i> Tùy chỉnh đối tượng:</span>
-            <div id="fontSelectorSection">
-                <select id="fontFamilySelector" onchange="applyFont(this.value)">
-                    <option value="'Noto Sans VN'">Noto Sans (Mặc định)</option>
-                    <option value="'Montserrat'">Montserrat</option>
-                    <option value="'Quicksand'">Quicksand dễ thương</option>
-                    <option value="'Dancing Script'">Dancing Script viết tay</option>
-                    <option value="'Caveat'">Caveat nét bút mực</option>
-                </select>
-            </div>
+            <select id="fontFamilySelector" onchange="applyFont(this.value)">
+                <option value="'Noto Sans VN'">Noto Sans (Mặc định)</option>
+                <option value="'Montserrat'">Montserrat</option>
+                <option value="'Quicksand'">Quicksand dễ thương</option>
+                <option value="'Dancing Script'">Dancing Script viết tay</option>
+                <option value="'Caveat'">Caveat nét bút mực</option>
+            </select>
             <div style="display:flex; gap: 5px; margin-top: 5px;">
                 <button class="btn" style="background:#1e293b;" onclick="applySize(5)"><i class="fa-solid fa-plus"></i> To lên</button>
                 <button class="btn" style="background:#1e293b;" onclick="applySize(-5)"><i class="fa-solid fa-minus"></i> Nhỏ đi</button>
@@ -224,56 +194,32 @@
 
     <div class="workspace">
         <div class="room-bar">
-            <span id="statusBadge" style="color: #10b981;"><i class="fa-solid fa-circle"></i> Trực tuyến Realtime</span>
-            <span id="roomDisplay" style="color: #94a3b8;">Mã phòng: ...</span>
+            <button class="btn btn-warning" onclick="downloadBookImage()"><i class="fa-solid fa-download"></i> XUẤT BẢN THÀNH ẢNH</button>
         </div>
 
         <div class="page-navigation">
             <button class="btn" style="width:90px; margin:0;" onclick="turnPage(-1)"><i class="fa-solid fa-chevron-left"></i> Trước</button>
-            <div class="page-indicator" id="pageIndicator">Đang kết nối...</div>
+            <div class="page-indicator" id="pageIndicator">Đang tải...</div>
             <button class="btn" style="width:90px; margin:0;" onclick="turnPage(1)">Sau <i class="fa-solid fa-chevron-right"></i></button>
         </div>
 
-        <div class="book-container" onclick="clearSelection()">
+        <div class="book-container" id="bookContainer" onclick="clearSelection()">
             <div class="book-spine" id="bookSpine"></div>
             
             <div class="book-page-sheet left-side" id="sheetLeft">
-                <div class="page-face front-face" id="pLeftFront" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
-                <div class="page-face back-face" id="pLeftBack" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
+                <div class="page-face" id="pLeftFront"></div>
             </div>
 
             <div class="book-page-sheet right-side" id="sheetRight">
-                <div class="page-face front-face" id="pRightFront" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
-                <div class="page-face back-face" id="pRightBack" ondragover="allowDrop(event)" ondrop="dropElement(event)"></div>
-            </div>
-        </div>
-
-        <div class="owner-modal" id="approvalModal">
-            <h4><i class="fa-solid fa-bell" style="color:var(--owner-color)"></i> Yêu cầu truy cập phòng</h4>
-            <p style="margin: 0; font-size: 12px; color: #cbd5e1;" id="approvalModalText">Một thiết bị đang chờ bạn cấp quyền...</p>
-            <div class="modal-actions">
-                <button style="background: #10b981; color: white;" onclick="approveGuest('editor')">Cho Sửa</button>
-                <button style="background: #3b82f6; color: white;" onclick="approveGuest('viewer')">Cho Xem</button>
-                <button style="background: #ef4444; color: white;" onclick="approveGuest('block')">Từ chối</button>
+                <div class="page-face" id="pRightFront"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Cấu hình tài khoản truyền dữ liệu Ably Realtime
-        let ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
-        let channel = null;
         let roomCode = '';
-        
-        let myRole = 'viewer'; // Mặc định vai trò ban đầu
-        let myClientId = 'user_' + Math.random().toString(36).substr(2, 5);
-        let currentPendingGuest = null;
-        let defaultPolicy = 'pending'; 
-
-        let isTurning = false;
         let selectedId = null;
 
-        // Cấu trúc dữ liệu mặc định của Sổ Tay
         let notebook = {
             currentPagePair: 0,
             pages: [
@@ -286,193 +232,32 @@
             ]
         };
 
-        // Kho dữ liệu biểu tượng mở rộng phong cách Flaticon
         const mockFlaticonDb = [
-            "fa-star", "fa-heart", "fa-crown", "fa-fire", "fa-bolt", "fa-gift", "fa-cat", "fa-mug-hot",
-            "fa-ghost", "fa-leaf", "fa-smile", "fa-sun", "fa-moon", "fa-cloud", "fa-umbrella", "fa-music",
-            "fa-book", "fa-pen", "fa-cookie-bite", "fa-cake-candles", "fa-ice-cream", "fa-pizza-slice", "fa-gem", "fa-trophy"
+            "fa-star", "fa-heart", "fa-crown", "fa-fire", "fa-bolt", "fa-gift", "fa-cat", "fa-mug-hot"
         ];
 
-        // TỰ ĐỘNG KHỞI TẠO VÀ XÁC THỰC QUYỀN CHỦ SỞ HỮU (BẢO MẬT GITHUB PAGES)
+        // Khởi tạo hệ thống lưu trữ đồng bộ mã phòng qua URL công khai
         function initAppConfig() {
             const urlParams = new URLSearchParams(window.location.search);
-            const roomParam = urlParams.get('room');
+            roomCode = urlParams.get('room');
             
-            if (roomParam) {
-                roomCode = roomParam;
-            } else {
-                // Nếu vào link gốc (Chưa có phòng), tự sinh phòng ngẫu nhiên từ 100000 đến 999999
+            if (!roomCode) {
                 roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+                window.history.pushState({}, '', '?room=' + roomCode);
             }
 
-            // Kiểm tra dấu vết LocalStorage trên máy để nhận diện chủ phòng vĩnh viễn
-            const isRoomOwner = localStorage.getItem('owner_of_room_' + roomCode);
-
-            if (isRoomOwner === 'true' || !roomParam) {
-                myRole = 'owner';
-                localStorage.setItem('owner_of_room_' + roomCode, 'true'); // Lưu dấu vĩnh viễn trên thiết bị này
-                
-                document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-crown" style="color:var(--owner-color)"></i> Bạn là Chủ Sở Hữu';
-                document.getElementById("ownerSettings").style.display = "block";
-                
-                // Đổi link trên thanh địa chỉ thành link phòng để copy chia sẻ
-                if(!roomParam) {
-                    window.history.pushState({}, '', '?room=' + roomCode);
-                }
-            } else {
-                // Khách truy cập sau qua link phòng nhận được từ bạn
-                myRole = 'pending';
-                document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-hourglass-half" style="color:#94a3b8"></i> Đang chờ Chủ duyệt...';
-                applyPermissionUI(false); // Khóa tính năng chỉnh sửa
+            let savedData = localStorage.getItem('notebook_data_' + roomCode);
+            if (savedData) {
+                notebook = JSON.parse(savedData);
             }
-        }
-
-        // ĐỒNG BỘ HÓA DỮ LIỆU CHUẨN THỜI GIAN THỰC (REALTIME & LOCALSTORAGE SYNC)
-        function connectRealtime() {
-            channel = ably.channels.get('sotay_3d_premium_v2_' + roomCode);
-            document.getElementById("roomDisplay").innerText = "Mã phòng: " + roomCode;
-
-            // Kênh quản lý và xét duyệt thành viên
-            channel.subscribe('permission_channel', (msg) => {
-                let data = msg.data;
-                if (myRole === 'owner' && data.type === 'request_access') {
-                    if (defaultPolicy === 'pending') {
-                        currentPendingGuest = data.clientId;
-                        document.getElementById("approvalModalText").innerText = `Thiết bị [${data.clientId}] muốn xin vào phòng của bạn.`;
-                        document.getElementById("approvalModal").style.display = "flex";
-                    } else {
-                        channel.publish('permission_channel', { type: 'grant_access', targetId: data.clientId, role: defaultPolicy });
-                    }
-                }
-                
-                if (data.type === 'grant_access' && data.targetId === myClientId) {
-                    myRole = data.role;
-                    if(myRole === 'editor') {
-                        document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-user-pen" style="color:#10b981"></i> Người chỉnh sửa';
-                        applyPermissionUI(true);
-                    } else if(myRole === 'viewer') {
-                        document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-user-tie" style="color:#3b82f6"></i> Người xem (Chỉ đọc)';
-                        applyPermissionUI(false);
-                    } else {
-                        alert("Yêu cầu vào phòng bị từ chối.");
-                        window.location.href = window.location.pathname;
-                    }
-                }
-            });
-
-            // Gửi tín hiệu đồng bộ hóa ban đầu
-            if (myRole === 'owner') {
-                // Nếu chủ phòng quay lại, khôi phục từ bộ nhớ Cloud hoặc Local của chủ
-                let savedData = localStorage.getItem('notebook_backup_' + roomCode);
-                if(savedData) notebook = JSON.parse(savedData);
-                channel.publish('sync_response', { pages: notebook.pages });
-            } else {
-                // Khách phát tín hiệu xin quyền vào phòng
-                channel.publish('permission_channel', { type: 'request_access', clientId: myClientId });
-            }
-
-            // Lắng nghe các thay đổi đồng bộ trên hệ thống sách
-            channel.subscribe('update', (msg) => {
-                if (!isTurning) {
-                    notebook.pages = msg.data.pages;
-                    if(myRole === 'owner') localStorage.setItem('notebook_backup_' + roomCode, JSON.stringify(notebook));
-                    renderBook3D();
-                }
-            });
-            channel.subscribe('request_sync', () => {
-                channel.publish('sync_response', { pages: notebook.pages });
-            });
-            channel.subscribe('sync_response', (msg) => {
-                if (!isTurning) {
-                    notebook.pages = msg.data.pages;
-                    if(myRole === 'owner') localStorage.setItem('notebook_backup_' + roomCode, JSON.stringify(notebook));
-                    renderBook3D();
-                }
-            });
-
             renderBook3D();
             setupPasteEvent();
         }
 
-        function approveGuest(roleType) {
-            if (currentPendingGuest) {
-                channel.publish('permission_channel', { type: 'grant_access', targetId: currentPendingGuest, role: roleType });
-                document.getElementById("approvalModal").style.display = "none";
-                currentPendingGuest = null;
-            }
+        function saveData() {
+            localStorage.setItem('notebook_data_' + roomCode, JSON.stringify(notebook));
         }
 
-        function changeDefaultPermission(val) {
-            defaultPolicy = val;
-        }
-
-        function applyPermissionUI(canEdit) {
-            const gates = document.querySelectorAll(".edit-gate");
-            gates.forEach(el => {
-                if(!canEdit) {
-                    el.style.opacity = "0.3";
-                    el.style.pointerEvents = "none";
-                } else {
-                    el.style.opacity = "1";
-                    el.style.pointerEvents = "auto";
-                }
-            });
-        }
-
-        function sync() {
-            if(myRole !== 'owner' && myRole !== 'editor') return;
-            if(myRole === 'owner') localStorage.setItem('notebook_backup_' + roomCode, JSON.stringify(notebook));
-            if(channel) channel.publish('update', { pages: notebook.pages });
-            renderBook3D();
-        }
-
-        // TẢI ẢNH TỪ FILE MÁY TÍNH
-        function uploadLocalImage(event) {
-            let file = event.target.files[0];
-            if (!file) return;
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                addNewElement('image', e.target.result);
-            }
-            reader.readAsDataURL(file);
-        }
-
-        // DÁN ẢNH TRỰC TIẾP TỪ BÀN PHÍM (PASTE IMAGE)
-        function setupPasteEvent() {
-            window.addEventListener('paste', function(e) {
-                if(myRole !== 'owner' && myRole !== 'editor') return;
-                let items = e.clipboardData.items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        let blob = items[i].getAsFile();
-                        let reader = new FileReader();
-                        reader.onload = function(event) {
-                            addNewElement('image', event.target.result);
-                        };
-                        reader.readAsDataURL(blob);
-                    }
-                }
-            });
-        }
-
-        // BỘ LỌC TÌM KIẾM ICON FLATICON-STYLE
-        function filterIcons() {
-            let q = document.getElementById("iconSearchInput").value.toLowerCase();
-            let grid = document.getElementById("iconLibraryGrid");
-            grid.innerHTML = "";
-            
-            mockFlaticonDb.forEach(iconClass => {
-                if(iconClass.includes(q) || q === "") {
-                    let div = document.createElement("div");
-                    div.className = "asset-item";
-                    div.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
-                    div.onclick = () => addNewElement('icon', 'fa-solid ' + iconClass);
-                    grid.appendChild(div);
-                }
-            });
-        }
-
-        // HÌNH ẢNH DỰNG KHUNG 3D CUỐN SÁCH
         function renderBook3D() {
             let leftIdx = notebook.currentPagePair * 2;
             let rightIdx = leftIdx + 1;
@@ -488,60 +273,39 @@
             if (notebook.currentPagePair === 0) {
                 sheetLeft.classList.add("invisible-sheet");
                 bookSpine.style.opacity = "0"; 
-            } 
-            else if (notebook.pages[leftIdx]?.isLastCover) {
+            } else if (notebook.pages[leftIdx]?.isLastCover) {
                 sheetRight.classList.add("invisible-sheet");
                 bookSpine.style.opacity = "0"; 
             }
 
-            const deleteBtn = document.getElementById("deleteBtn");
-            if (notebook.pages[leftIdx]?.isCover || notebook.pages[rightIdx]?.isCover || notebook.pages[leftIdx]?.isBlankPlaceholder || notebook.pages.length <= 4) {
-                if(deleteBtn) { deleteBtn.style.opacity = "0.4"; deleteBtn.style.cursor = "not-allowed"; }
-            } else {
-                if(deleteBtn) { deleteBtn.style.opacity = "1"; deleteBtn.style.cursor = "pointer"; }
-            }
+            fillFaceData("pLeftFront", leftIdx);
+            fillFaceData("pRightFront", rightIdx);
 
-            fillFaceData("pLeftFront", leftIdx, leftIdx);
-            fillFaceData("pRightFront", rightIdx, rightIdx);
-
-            let activeCoverPage = null;
-            if (notebook.pages[leftIdx]?.isCover) activeCoverPage = notebook.pages[leftIdx];
-            else if (notebook.pages[rightIdx]?.isCover) activeCoverPage = notebook.pages[rightIdx];
-
-            if (activeCoverPage && !activeCoverPage.isBlankPlaceholder) {
-                showCoverEditor(activeCoverPage.title, activeCoverPage.bg);
+            let activeCoverPage = notebook.pages[leftIdx]?.isCover ? notebook.pages[leftIdx] : (notebook.pages[rightIdx]?.isCover ? notebook.pages[rightIdx] : null);
+            if (activeCoverPage) {
+                document.getElementById("coverConfigSection").style.display = "block";
+                document.getElementById("coverTitleField").value = activeCoverPage.title;
+                document.getElementById("coverColorField").value = activeCoverPage.bg;
             } else {
                 document.getElementById("coverConfigSection").style.display = "none";
             }
 
-            if(selectedId) {
-                let node = document.getElementById(selectedId);
-                if(node) node.classList.add("selected");
-            }
-
             let totalContentPages = notebook.pages.length - 4; 
-            if (notebook.currentPagePair === 0) {
-                document.getElementById("pageIndicator").innerText = `Bìa Trước / ${totalContentPages} trang`;
-            } else if (notebook.pages[leftIdx]?.isLastCover) {
-                document.getElementById("pageIndicator").innerText = `Bìa Sau / ${totalContentPages} trang`;
-            } else {
-                document.getElementById("pageIndicator").innerText = `Trang ${leftIdx - 1} - ${rightIdx - 1} / ${totalContentPages}`;
-            }
-            applyPermissionUI(myRole === 'owner' || myRole === 'editor');
+            document.getElementById("pageIndicator").innerText = notebook.currentPagePair === 0 ? `Bìa Trước / ${totalContentPages} trang` : (notebook.pages[leftIdx]?.isLastCover ? `Bìa Sau / ${totalContentPages} trang` : `Trang ${leftIdx - 1} - ${rightIdx - 1} / ${totalContentPages}`);
         }
 
-        function fillFaceData(faceId, pageIdx, viewNum) {
+        function fillFaceData(faceId, pageIdx) {
             const faceNode = document.getElementById(faceId);
             faceNode.innerHTML = "";
-            if(!notebook.pages[pageIdx] || notebook.pages[pageIdx].isBlankPlaceholder) {
+            let page = notebook.pages[pageIdx];
+            if (!page || page.isBlankPlaceholder) {
                 faceNode.style.backgroundColor = "transparent";
                 return;
             }
 
-            let page = notebook.pages[pageIdx];
             faceNode.style.backgroundColor = page.bg;
 
-            if(page.isCover) {
+            if (page.isCover) {
                 faceNode.classList.add("cover-style");
                 faceNode.innerHTML = `
                     <i class="fa-solid fa-bookmark" style="font-size:44px;color:#fde047;"></i>
@@ -551,15 +315,123 @@
             } else {
                 faceNode.classList.remove("cover-style");
                 faceNode.innerHTML = `<div class="page-num">Trang ${pageIdx - 1}</div>`;
-                Object.values(page.elements).forEach(el => buildDomElement(el, faceNode, pageIdx));
+                Object.values(page.elements || {}).forEach(el => buildDomElement(el, faceNode, pageIdx));
             }
         }
 
-        function showCoverEditor(title, bgHex) {
-            if(myRole !== 'owner' && myRole !== 'editor') return;
-            document.getElementById("coverConfigSection").style.display = "block";
-            document.getElementById("coverTitleField").value = title;
-            document.getElementById("coverColorField").value = bgHex;
+        function buildDomElement(el, parentNode, pageIdx) {
+            let div = document.createElement("div");
+            div.className = "element";
+            div.id = el.id;
+            div.style.left = el.x + "px";
+            div.style.top = el.y + "px";
+
+            if (selectedId === el.id) div.classList.add("selected");
+
+            let deleteBtn = document.createElement("div");
+            deleteBtn.className = "delete-btn";
+            deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            deleteBtn.onclick = (e) => { e.stopPropagation(); deleteElement(pageIdx, el.id); };
+            div.appendChild(deleteBtn);
+
+            if (el.type === 'text') {
+                let textDiv = document.createElement("div");
+                textDiv.className = "element-text";
+                textDiv.contentEditable = true;
+                textDiv.style.fontFamily = el.fontFamily || 'inherit';
+                textDiv.style.fontSize = (el.size || 18) + "px";
+                textDiv.style.color = el.color || '#000000';
+                textDiv.innerText = el.content;
+                textDiv.onblur = () => { el.content = textDiv.innerText; saveData(); };
+                div.appendChild(textDiv);
+            } else if (el.type === 'icon') {
+                let icon = document.createElement("i");
+                icon.className = `${el.content} element-icon`;
+                icon.style.fontSize = (el.size || 48) + "px";
+                icon.style.color = el.color || '#6366f1';
+                div.appendChild(icon);
+            } else if (el.type === 'image') {
+                let img = document.createElement("img");
+                img.className = "element-img";
+                img.src = el.content;
+                img.style.width = (el.size || 140) + "px";
+                div.appendChild(img);
+            }
+
+            div.onmousedown = (e) => { e.stopPropagation(); selectElement(el.id); dragStart(e, el, pageIdx); };
+            parentNode.appendChild(div);
+        }
+
+        function addNewElement(type, content) {
+            let leftIdx = notebook.currentPagePair * 2;
+            let targetPage = notebook.pages[leftIdx]?.isCover ? leftIdx : leftIdx + 1;
+            if (notebook.pages[targetPage].isCover || notebook.pages[targetPage].isBlankPlaceholder) return;
+
+            let id = 'el_' + Date.now();
+            if (!notebook.pages[targetPage].elements) notebook.pages[targetPage].elements = {};
+            
+            notebook.pages[targetPage].elements[id] = {
+                id: id, type: type, content: content, x: 50, y: 50, size: type === 'image' ? 140 : (type === 'icon' ? 48 : 18), color: type === 'text' ? '#000000' : '#6366f1', fontFamily: "'Noto Sans VN'"
+            };
+            selectedId = id;
+            saveData();
+            renderBook3D();
+        }
+
+        function dragStart(e, el, pageIdx) {
+            let startX = e.clientX; let startY = e.clientY;
+            let elemX = el.x; let elemY = el.y;
+            
+            function dragging(ev) {
+                el.x = elemX + (ev.clientX - startX);
+                el.y = elemY + (ev.clientY - startY);
+                let node = document.getElementById(el.id);
+                if (node) { node.style.left = el.x + "px"; node.style.top = el.y + "px"; }
+            }
+            function dragEnd() { window.removeEventListener('mousemove', dragging); window.removeEventListener('mouseup', dragEnd); saveData(); }
+            window.addEventListener('mousemove', dragging);
+            window.addEventListener('mouseup', dragEnd);
+        }
+
+        function selectElement(id) {
+            selectedId = id;
+            document.querySelectorAll(".element").forEach(node => node.classList.remove("selected"));
+            let actNode = document.getElementById(id);
+            if (actNode) actNode.classList.add("selected");
+            document.getElementById("editorPanel").style.display = "block";
+        }
+
+        function clearSelection() {
+            selectedId = null;
+            document.querySelectorAll(".element").forEach(node => node.classList.remove("selected"));
+            document.getElementById("editorPanel").style.display = "none";
+        }
+
+        function deleteElement(pageIdx, id) {
+            delete notebook.pages[pageIdx].elements[id];
+            clearSelection(); saveData(); renderBook3D();
+        }
+
+        function turnPage(dir) {
+            let nextPair = notebook.currentPagePair + dir;
+            if (nextPair >= 0 && nextPair * 2 < notebook.pages.length) {
+                notebook.currentPagePair = nextPair;
+                renderBook3D();
+            }
+        }
+
+        function addPagePair() {
+            let insIdx = notebook.pages.length - 2;
+            notebook.pages.splice(insIdx, 0, { bg: "#fcfbf7", elements: {} }, { bg: "#fcfbf7", elements: {} });
+            saveData(); renderBook3D();
+        }
+
+        function deleteSelectedPagePair() {
+            let leftIdx = notebook.currentPagePair * 2;
+            if (notebook.pages[leftIdx].isCover || notebook.pages[leftIdx+1].isCover || notebook.pages.length <= 6) return;
+            notebook.pages.splice(leftIdx, 2);
+            notebook.currentPagePair = Math.max(0, notebook.currentPagePair - 1);
+            saveData(); renderBook3D();
         }
 
         function updateCoverData() {
@@ -568,197 +440,68 @@
             let title = document.getElementById("coverTitleField").value;
             let color = document.getElementById("coverColorField").value;
 
-            if(notebook.pages[leftIdx]?.isCover) {
-                notebook.pages[leftIdx].title = title; notebook.pages[leftIdx].bg = color;
-            } else if(notebook.pages[rightIdx]?.isCover) {
-                notebook.pages[rightIdx].title = title; notebook.pages[rightIdx].bg = color;
-            }
-            sync();
+            if (notebook.pages[leftIdx]?.isCover) { notebook.pages[leftIdx].title = title; notebook.pages[leftIdx].bg = color; }
+            else if (notebook.pages[rightIdx]?.isCover) { notebook.pages[rightIdx].title = title; notebook.pages[rightIdx].bg = color; }
+            saveData(); renderBook3D();
         }
 
-        function buildDomElement(data, parentContainer, pageIndex) {
-            let el = document.createElement("div");
-            el.id = data.id; el.className = "element";
-            el.style.left = data.x + "px"; el.style.top = data.y + "px";
-            if(myRole === 'owner' || myRole === 'editor') el.setAttribute("draggable", "true");
+        function applyFont(font) { if (!selectedId) return; getActiveEl().fontFamily = font; saveData(); renderBook3D(); }
+        function applySize(diff) { if (!selectedId) return; let el = getActiveEl(); el.size = (el.size || 18) + diff; saveData(); renderBook3D(); }
+        function applyColor(hex) { if (!selectedId) return; getActiveEl().color = hex; saveData(); renderBook3D(); }
+        function applyPageBg(hex) { let leftIdx = notebook.currentPagePair * 2; let target = notebook.pages[leftIdx].isCover ? leftIdx : leftIdx + 1; notebook.pages[target].bg = hex; saveData(); renderBook3D(); }
+        
+        function getActiveEl() {
+            for (let p of notebook.pages) { if (p.elements && p.elements[selectedId]) return p.elements[selectedId]; }
+            return null;
+        }
 
-            let del = document.createElement("div");
-            del.className = "delete-btn";
-            del.innerHTML = '<i class="fa-solid fa-circle-xmark"></i>';
-            del.onclick = (e) => {
-                e.stopPropagation();
-                delete notebook.pages[pageIndex].elements[data.id];
-                selectedId = null;
-                document.getElementById("editorPanel").style.display = 'none';
-                sync();
-            };
-            el.appendChild(del);
+        function uploadLocalImage(event) {
+            let file = event.target.files[0]; if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function(e) { addNewElement('image', e.target.result); }
+            reader.readAsDataURL(file);
+        }
 
-            let core;
-            if(data.type === 'text') {
-                core = document.createElement("div"); core.className = "element-text";
-                if(myRole === 'owner' || myRole === 'editor') core.setAttribute("contenteditable", "true");
-                core.innerText = data.content;
-                if(data.color) core.style.color = data.color;
-                if(data.size) core.style.fontSize = data.size + "px";
-                if(data.font) core.style.fontFamily = data.font;
-                
-                core.addEventListener("blur", () => {
-                    notebook.pages[pageIndex].elements[data.id].content = core.innerText;
-                    sync();
+        function setupPasteEvent() {
+            window.addEventListener('paste', function(e) {
+                let items = e.clipboardData.items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        let blob = items[i].getAsFile();
+                        let reader = new FileReader();
+                        reader.onload = function(event) { addNewElement('image', event.target.result); };
+                        reader.readAsDataURL(blob);
+                    }
+                }
+            });
+        }
+
+        function filterIcons() {
+            let q = document.getElementById("iconSearchInput").value.toLowerCase();
+            let grid = document.getElementById("iconLibraryGrid"); grid.innerHTML = "";
+            mockFlaticonDb.forEach(iconClass => {
+                if (iconClass.includes(q) || q === "") {
+                    let div = document.createElement("div"); div.className = "asset-item"; div.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+                    div.onclick = () => addNewElement('icon', 'fa-solid ' + iconClass); grid.appendChild(div);
+                }
+            });
+        }
+
+        // CHỨC NĂNG XUẤT BẢN THÀNH ẢNH TOÀN DIỆN KHÔNG LỖI
+        function downloadBookImage() {
+            clearSelection();
+            setTimeout(() => {
+                const book = document.getElementById("bookContainer");
+                html2canvas(book, { backgroundColor: null, useCORS: true, scale: 2 }).then(canvas => {
+                    const link = document.createElement("a");
+                    link.download = "so-tay-3d-premium.png";
+                    link.href = canvas.toDataURL("image/png");
+                    link.click();
                 });
-            } else if(data.type === 'sticker') {
-                core = document.createElement("div"); core.className = "element-sticker";
-                core.innerText = data.content;
-                if(data.size) core.style.fontSize = data.size + "px";
-            } else if(data.type === 'image') {
-                core = document.createElement("img"); core.className = "element-img";
-                core.src = data.content;
-                if(data.size) core.style.width = data.size + "px";
-            } else if(data.type === 'icon') {
-                core = document.createElement("div"); core.className = "element-icon";
-                core.innerHTML = `<i class="${data.content}"></i>`;
-                if(data.size) core.style.fontSize = data.size + "px";
-                if(data.color) core.style.color = data.color;
-            }
-
-            el.appendChild(core);
-
-            el.addEventListener("click", (e) => {
-                e.stopPropagation(); 
-                if(myRole !== 'owner' && myRole !== 'editor') return;
-                clearSelection();
-                selectedId = data.id; el.classList.add("selected");
-                document.getElementById("editorPanel").style.display = 'block';
-                document.getElementById("pageBgColorPicker").value = notebook.pages[pageIndex].bg || "#fcfbf7";
-            });
-
-            el.addEventListener("dragstart", (e) => {
-                e.dataTransfer.setData("text/id", el.id);
-                e.dataTransfer.setData("text/pageIdx", pageIndex);
-                e.dataTransfer.setData("num/offsetX", e.offsetX);
-                e.dataTransfer.setData("num/offsetY", e.offsetY);
-            });
-
-            parentContainer.appendChild(el);
+            }, 100);
         }
 
-        // ĐIỀU KHIỂN HÀM LẬT TRANG SÁCH 0.75S KHÔNG BỊ TRỄ LOAD
-        function turnPage(dir) {
-            if (isTurning) return;
-            let target = notebook.currentPagePair + dir;
-            if(target >= 0 && target * 2 < notebook.pages.length) {
-                isTurning = true;
-                const sheetLeft = document.getElementById("sheetLeft");
-                const sheetRight = document.getElementById("sheetRight");
-
-                if(dir === 1) sheetRight.classList.add("flipped-to-left");
-                else sheetLeft.classList.add("flipped-to-right");
-
-                notebook.currentPagePair = target;
-
-                setTimeout(() => {
-                    clearSelection();
-                    renderBook3D();
-                    sheetLeft.classList.remove("flipped-to-right");
-                    sheetRight.classList.remove("flipped-to-left");
-                    setTimeout(() => { isTurning = false; }, 50);
-                }, 700); 
-            }
-        }
-
-        function addPagePair() {
-            let len = notebook.pages.length;
-            notebook.pages.splice(len - 2, 0, { bg: "#fcfbf7", elements: {} }, { bg: "#fcfbf7", elements: {} });
-            notebook.currentPagePair = Math.floor((notebook.pages.length - 4) / 2) + 1;
-            sync();
-        }
-
-        function deleteSelectedPagePair() {
-            let leftIdx = notebook.currentPagePair * 2;
-            if (notebook.pages[leftIdx].isCover || notebook.pages[leftIdx].isBlankPlaceholder || notebook.pages.length <= 6) return;
-            if(confirm(`Xóa vĩnh viễn cặp trang này?`)) {
-                notebook.pages.splice(leftIdx, 2);
-                if(notebook.currentPagePair > 0) notebook.currentPagePair--;
-                clearSelection(); sync();
-            }
-        }
-
-        function addNewElement(type, content) {
-            let leftIdx = notebook.currentPagePair * 2;
-            let activeIdx = notebook.pages[leftIdx].isBlankPlaceholder ? leftIdx + 1 : leftIdx;
-
-            let id = 'canvas_' + Math.random().toString(36).substr(2, 9);
-            notebook.pages[activeIdx].elements[id] = {
-                id: id, type: type, content: content,
-                x: 70, y: 100, size: type === 'icon' ? 48 : (type === 'sticker' ? 55 : 18), color: '#6366f1', font: "'Noto Sans VN'"
-            };
-            sync();
-        }
-
-        function applyFont(fontName) {
-            let item = getActiveElement();
-            if(item && item.type === 'text') { item.font = fontName; sync(); }
-        }
-
-        function applySize(amt) {
-            let item = getActiveElement();
-            if(item) { item.size = (item.size || 18) + amt; sync(); }
-        }
-
-        function applyColor(hex) {
-            let item = getActiveElement();
-            if(item) { item.color = hex; sync(); }
-        }
-
-        function applyPageBg(hex) {
-            let leftIdx = notebook.currentPagePair * 2;
-            let rightIdx = leftIdx + 1;
-            if(notebook.pages[leftIdx].elements && notebook.pages[leftIdx].elements[selectedId]) notebook.pages[leftIdx].bg = hex;
-            else if(notebook.pages[rightIdx] && notebook.pages[rightIdx].elements && notebook.pages[rightIdx].elements[selectedId]) notebook.pages[rightIdx].bg = hex;
-            sync();
-        }
-
-        function getActiveElement() {
-            if(!selectedId) return null;
-            let leftIdx = notebook.currentPagePair * 2;
-            let rightIdx = leftIdx + 1;
-            return (notebook.pages[leftIdx].elements ? notebook.pages[leftIdx].elements[selectedId] : null) || 
-                   (notebook.pages[rightIdx] && notebook.pages[rightIdx].elements ? notebook.pages[rightIdx].elements[selectedId] : null);
-        }
-
-        function allowDrop(e) { e.preventDefault(); }
-        function dropElement(e) {
-            e.preventDefault();
-            let id = e.dataTransfer.getData("text/id");
-            let oldPageIdx = parseInt(e.dataTransfer.getData("text/pageIdx"));
-            let offsetX = parseInt(e.dataTransfer.getData("num/offsetX"));
-            let offsetY = parseInt(e.dataTransfer.getData("num/offsetY"));
-            
-            let targetPageIdx = notebook.currentPagePair * 2;
-            if (e.currentTarget.id.includes("Right")) targetPageIdx += 1;
-            if (notebook.pages[targetPageIdx].isBlankPlaceholder) return;
-
-            let rect = e.currentTarget.getBoundingClientRect();
-            let itemData = notebook.pages[oldPageIdx].elements[id];
-            if(itemData) {
-                delete notebook.pages[oldPageIdx].elements[id];
-                itemData.x = e.clientX - rect.left - offsetX;
-                itemData.y = e.clientY - rect.top - offsetY;
-                notebook.pages[targetPageIdx].elements[id] = itemData;
-                sync();
-            }
-        }
-
-        function clearSelection() {
-            document.querySelectorAll(".element").forEach(el => el.classList.remove("selected"));
-            selectedId = null;
-            document.getElementById("editorPanel").style.display = 'none';
-        }
-
-        window.onload = () => {
-            initAppConfig(); connectRealtime();
-        };
+        window.onload = initAppConfig;
     </script>
 </body>
 </html>
