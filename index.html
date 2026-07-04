@@ -1,80 +1,18 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>Sổ Tay 3D - Hệ Thống Bảo Mật</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
-    <style>
-        body { margin: 0; background: #0f172a; color: white; font-family: sans-serif; }
-        .owner-modal {
-            position: fixed; bottom: 30px; right: 30px; background: #1e293b;
-            border: 2px solid #f59e0b; padding: 20px; border-radius: 12px;
-            width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-            z-index: 9999; display: none; flex-direction: column; gap: 10px;
-        }
-        .modal-actions { display: flex; gap: 5px; }
-        .modal-actions button { flex: 1; padding: 8px; border: none; cursor: pointer; color: white; border-radius: 4px; font-weight: bold; }
-    </style>
+    <title>Test Kết Nối</title>
 </head>
-<body>
-
-    <div id="roleDisplay" style="padding: 20px;">Đang kết nối hệ thống...</div>
-
-    <div class="owner-modal" id="approvalModal">
-        <h4 style="margin:0;"><i class="fa-solid fa-user-check"></i> Phê duyệt thành viên</h4>
-        <p id="approvalModalText" style="font-size: 13px;"></p>
-        <div class="modal-actions">
-            <button style="background: #10b981;" onclick="approveGuest('editor')">Cho Sửa</button>
-            <button style="background: #3b82f6;" onclick="approveGuest('viewer')">Xem</button>
-            <button style="background: #ef4444;" onclick="approveGuest('block')">Từ chối</button>
-        </div>
-    </div>
-
+<body style="background-color: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif;">
+    <h1 id="status">Đang tải trang...</h1>
+    
     <script>
-        const ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
-        let roomCode = new URLSearchParams(window.location.search).get('room') || Math.floor(100000 + Math.random() * 900000).toString();
-        let myClientId = 'user_' + Math.random().toString(36).substr(2, 5);
-        let myRole = 'pending';
-        let currentPendingGuest = null;
-
-        // Tự động set URL
-        if (!window.location.search.includes('room')) {
-            window.history.pushState({}, '', '?room=' + roomCode);
-        }
-
-        // Kiểm tra quyền sở hữu
-        if (localStorage.getItem('owner_of_room_' + roomCode) === 'true') {
-            myRole = 'owner';
-        } else if (!window.location.search.includes('room')) {
-            myRole = 'owner';
-            localStorage.setItem('owner_of_room_' + roomCode, 'true');
-        }
-
-        const channel = ably.channels.get('room_' + roomCode);
-
-        channel.subscribe('permission_channel', (msg) => {
-            if (myRole === 'owner' && msg.data.type === 'request_access') {
-                currentPendingGuest = msg.data.clientId;
-                document.getElementById("approvalModal").style.display = "flex";
-                document.getElementById("approvalModalText").innerText = "Thiết bị " + msg.data.clientId + " muốn vào phòng.";
-            }
-            if (msg.data.type === 'grant_access' && msg.data.targetId === myClientId) {
-                myRole = msg.data.role;
-                document.getElementById("roleDisplay").innerText = "Quyền của bạn: " + myRole;
-            }
-        });
-
-        if (myRole === 'pending') {
-            channel.publish('permission_channel', { type: 'request_access', clientId: myClientId });
-        } else {
-            document.getElementById("roleDisplay").innerText = "Bạn là Chủ sở hữu (Owner)";
-        }
-
-        function approveGuest(roleType) {
-            channel.publish('permission_channel', { type: 'grant_access', targetId: currentPendingGuest, role: roleType });
-            document.getElementById("approvalModal").style.display = "none";
-        }
+        // Kiểm tra xem trình duyệt có đọc được code không
+        window.onload = function() {
+            document.getElementById("status").innerText = "Trang web đã tải thành công!";
+            console.log("Trang đã tải xong");
+        };
     </script>
 </body>
 </html>
