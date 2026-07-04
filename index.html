@@ -2,47 +2,47 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Sổ Tay 3D - Hệ Thống Offline</title>
+    <title>Sổ Tay 3D - Hệ Thống Cấp Quyền</title>
     <style>
         body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: #1e293b; padding: 20px; border-radius: 10px; }
+        .box { background: #1e293b; padding: 20px; border-radius: 10px; border: 1px solid #475569; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Hệ Thống Quản Lý Sổ Tay</h2>
-        <div id="status">Đang khởi tạo...</div>
+    <div class="box">
+        <h2 id="title">Hệ thống phân quyền</h2>
+        <div id="status">Đang tải...</div>
         <hr>
-        <p>Để chia sẻ: Hãy copy link trên trình duyệt và gửi cho người khác.</p>
+        <div id="controls" style="display:none;">
+            <p>Nhập "Mã bí mật" để mở quyền chỉnh sửa:</p>
+            <input type="password" id="passInput">
+            <button onclick="checkPassword()">Xác nhận</button>
+        </div>
     </div>
 
     <script>
-        // Tự tạo ID phòng
-        const urlParams = new URLSearchParams(window.location.search);
-        let room = urlParams.get('room');
-        
-        if (!room) {
-            room = Math.floor(Math.random() * 1000000).toString();
-            window.history.pushState({}, '', '?room=' + room);
+        // 1. Chỉ chủ phòng mới biết mật khẩu này
+        const SECRET_PASS = "123456"; 
+
+        // 2. Kiểm tra trạng thái đã đăng nhập chưa
+        if (localStorage.getItem('isAuthorized') === 'true') {
+            document.getElementById("status").innerHTML = "<b>Quyền:</b> Bạn là CHỈNH SỬA VIÊN (Editor).";
+        } else {
+            document.getElementById("status").innerHTML = "<b>Quyền:</b> Bạn là NGƯỜI XEM (Viewer).";
+            document.getElementById("controls").style.display = "block";
         }
 
-        // Kiểm tra xem trình duyệt có lưu quyền sở hữu phòng này không
-        let isOwner = localStorage.getItem('owner_' + room) === 'true';
-
-        // Nếu chưa có ai sở hữu phòng, thiết bị này là chủ phòng
-        if (!localStorage.getItem('owner_' + room)) {
-            localStorage.setItem('owner_' + room, 'true');
-            isOwner = true;
+        // 3. Hàm cấp quyền thủ công
+        function checkPassword() {
+            let p = document.getElementById("passInput").value;
+            if (p === SECRET_PASS) {
+                localStorage.setItem('isAuthorized', 'true');
+                alert("Đã cấp quyền chỉnh sửa!");
+                location.reload();
+            } else {
+                alert("Mã sai!");
+            }
         }
-
-        document.getElementById('status').innerHTML = isOwner ? 
-            "<b>Trạng thái:</b> Bạn là CHỦ PHÒNG (Toàn quyền chỉnh sửa)." : 
-            "<b>Trạng thái:</b> Bạn là KHÁCH (Đang chờ chủ phòng cấp quyền).";
-
-        // Logic duyệt quyền đơn giản: 
-        // Vì không dùng mạng ngoài, bạn có thể dùng cách: 
-        // "Ai cầm link phòng này coi như có quyền" (Nếu bạn chỉ dùng cho nhóm bạn thân)
-        console.log("Phòng hoạt động tại:", room);
     </script>
 </body>
 </html>
