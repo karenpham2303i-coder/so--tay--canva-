@@ -1,38 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Sổ Tay 3D - Hệ Thống Ổn Định</title>
-</head>
-<body style="background:#0f172a; color:white; font-family:sans-serif; padding:20px;">
+<script>
+    // Lấy mã phòng từ URL
+    const urlParams = new URLSearchParams(window.location.search);
+    let roomCode = urlParams.get('room');
     
-    <h2>Hệ thống Sổ tay 3D</h2>
-    <div id="status">Đang xác định vai trò...</div>
-    
-    <div id="editorTools" style="display:none; margin-top:20px; padding:20px; border:2px solid #10b981;">
-        <h3>Công cụ chỉnh sửa (Dành cho Chủ phòng)</h3>
-        <button>Thêm trang</button>
-        <button>Xóa trang</button>
-    </div>
+    // Tạo ID thiết bị ngẫu nhiên cho mỗi phiên làm việc
+    let myDeviceId = localStorage.getItem('deviceId');
+    if (!myDeviceId) {
+        myDeviceId = 'User_' + Math.floor(Math.random() * 100000);
+        localStorage.setItem('deviceId', myDeviceId);
+    }
 
-    <script>
-        // 1. Kiểm tra vai trò
-        let isOwner = localStorage.getItem('is_owner') === 'true';
+    const roleText = document.getElementById("roleStatus");
 
-        // 2. Nếu là lần đầu tiên, tự nhận là Chủ phòng
-        if (!localStorage.getItem('is_owner')) {
-            localStorage.setItem('is_owner', 'true');
-            isOwner = true;
-        }
-
-        // 3. Hiển thị UI theo quyền
-        const statusDiv = document.getElementById("status");
-        if (isOwner) {
-            statusDiv.innerHTML = "<b>Quyền của bạn:</b> Chủ phòng (Có thể chỉnh sửa)";
-            document.getElementById("editorTools").style.display = "block";
+    // Nếu không có mã phòng -> Bạn là người tạo phòng (Chủ)
+    if (!roomCode) {
+        let newRoom = Math.floor(Math.random() * 1000000);
+        roleText.innerHTML = "<b>Bạn là CHỦ PHÒNG</b><br><small>Gửi link này cho khách: " + window.location.href + "?room=" + newRoom + "</small>";
+        // Lưu quyền sở hữu cho riêng thiết bị của bạn
+        localStorage.setItem('owner_of_' + newRoom, 'true');
+    } else {
+        // Nếu có mã phòng -> Bạn là Khách (Trừ khi bạn có mã xác nhận của chủ)
+        if (localStorage.getItem('owner_of_' + roomCode) === 'true') {
+            roleText.innerHTML = "<b>Bạn là CHỦ PHÒNG (Đang quản lý phòng " + roomCode + ")</b>";
         } else {
-            statusDiv.innerHTML = "<b>Quyền của bạn:</b> Khách (Chỉ được xem)";
+            roleText.innerHTML = "<b>Bạn là KHÁCH (Phòng số: " + roomCode + ")</b>";
         }
-    </script>
-</body>
-</html>
+    }
+</script>
