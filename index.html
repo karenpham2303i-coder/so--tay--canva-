@@ -6,19 +6,17 @@
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }
-        /* Modal được làm nổi bật hơn */
         #approvalModal { 
             display: none; position: fixed; top: 50%; left: 50%; 
             transform: translate(-50%, -50%); background: #1e293b; 
             padding: 40px; border: 4px solid #f59e0b; border-radius: 15px; 
-            z-index: 99999; box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            text-align: center;
+            z-index: 99999; box-shadow: 0 0 50px rgba(0,0,0,0.5); text-align: center;
         }
     </style>
 </head>
 <body>
     <h2 id="roomDisplay">Đang tải...</h2>
-    <div id="roleDisplay">Đang kết nối...</div>
+    <div id="roleDisplay">Đang kết nối Ably...</div>
 
     <div id="approvalModal">
         <h2 style="color:#f59e0b;">Có khách mới!</h2>
@@ -28,13 +26,18 @@
     </div>
 
     <script>
-        const ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
+        // Khởi tạo Ably với cấu hình chuẩn
+        const ably = new Ably.Realtime({ key: 'h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw' });
+        
+        ably.connection.on("failed", () => alert("Kết nối bị lỗi! Hãy kiểm tra mạng hoặc API Key."));
+        ably.connection.on("connected", () => document.getElementById("roleDisplay").innerText = "Đã kết nối thành công!");
+
         const urlParams = new URLSearchParams(window.location.search);
         let roomCode = urlParams.get('room');
         let myClientId = 'Guest_' + Math.floor(Math.random() * 1000);
         let currentGuest = null;
 
-        // Xử lý vai trò
+        // Xử lý logic Chủ/Khách
         let isOwner = localStorage.getItem('is_owner_' + roomCode) === 'true';
         if (!roomCode) {
             roomCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -45,11 +48,14 @@
 
         const channel = ably.channels.get('room_' + roomCode);
         document.getElementById("roomDisplay").innerText = "Phòng: " + roomCode;
-        document.getElementById("roleDisplay").innerHTML = isOwner ? "<b>Bạn là CHỦ PHÒNG</b>" : "<b>Bạn là Khách</b>";
+        
+        // Chỉ hiện chữ Chủ/Khách sau khi đã xác định rõ
+        setTimeout(() => {
+            document.getElementById("roleDisplay").innerHTML = isOwner ? "<b>Bạn là CHỦ PHÒNG</b>" : "<b>Bạn là Khách</b>";
+        }, 500);
 
-        // Lắng nghe kết nối
+        // Lắng nghe yêu cầu từ khách
         channel.subscribe('request_access', (msg) => {
-            console.log("Nhận được yêu cầu từ:", msg.data.clientId); // Kiểm tra log bằng F12
             if (isOwner) {
                 currentGuest = msg.data.clientId;
                 document.getElementById("guestIdText").innerText = "Thiết bị: " + currentGuest;
@@ -57,16 +63,15 @@
             }
         });
 
-        // Khách gửi yêu cầu sau khi kết nối xong
-        ably.connection.on("connected", () => {
-            if (!isOwner) {
-                channel.publish('request_access', { clientId: myClientId });
-            }
-        });
+        // Khách gửi yêu cầu
+        if (!isOwner) {
+            channel.publish('request_access', { clientId: myClientId });
+        }
 
         function approveGuest(role) {
             channel.publish('grant_access', { targetId: currentGuest, role: role });
             document.getElementById("approvalModal").style.display = "none";
+            alert("Đã cấp quyền: " + role);
         }
     </script>
 </body>
