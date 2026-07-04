@@ -3,618 +3,512 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Tay 3D - Phiên Bản Hoàn Thiện Không Lỗi</title>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat&family=Dancing+Script&family=Montserrat&family=Noto+Sans&family=Quicksand:wght@500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Sổ Tay 3D Realtime Collaboration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.1/dist/yjs.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/y-webrtc@10.3.0/dist/y-webrtc.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Montserrat:wght@400;700&family=Noto+Sans+VN:wght@400;700&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --primary-color: #8e44ad;
-            --bg-color: #f5f6fa;
-            --sidebar-width: 320px;
+            --sidebar-width: 360px;
+            --primary: #6366f1;
+            --book-w: 480px;
+            --book-h: 580px;
         }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Noto Sans', sans-serif;
-        }
-
+        * { box-sizing: border-box; user-select: none; }
         body {
-            background-color: var(--bg-color);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+            margin: 0; padding: 0; font-family: 'Noto Sans VN', sans-serif;
+            background-color: #0f172a; display: flex; height: 100vh; overflow: hidden; color: #f1f5f9;
         }
 
-        /* Sidebar điều khiển */
+        /* SIDEBAR ĐIỀU KHIỂN */
         .sidebar {
-            width: var(--sidebar-width);
-            background: #ffffff;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            z-index: 10;
-            overflow-y: auto;
+            width: var(--sidebar-width); background: #1e293b; border-right: 1px solid #334155;
+            display: flex; flex-direction: column; padding: 20px; gap: 12px; overflow-y: auto; z-index: 110;
         }
-
-        .sidebar-header {
-            padding: 20px;
-            background: var(--primary-color);
-            color: white;
-            text-align: center;
-        }
-
-        .section {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .section-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
+        h2 { margin: 0; color: #ffffff; font-size: 18px; display: flex; align-items: center; gap: 10px;}
+        .section { background: #334155; padding: 12px; border-radius: 8px; border: 1px solid #475569; }
+        .label { font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px;}
+        
         .btn {
-            width: 100%;
-            padding: 10px;
-            background: #3498db;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-bottom: 8px;
-            transition: 0.2s;
+            background: var(--primary); color: white; border: none; padding: 10px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; display: flex;
+            align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 5px; transition: 0.2s;
+        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary { background: #10b981; }
+        .btn-danger { background: #ef4444; }
+        .btn-warning { background: #f59e0b; }
+
+        input, select {
+            width: 100%; padding: 8px 12px; border: 1px solid #475569; background: #1e293b;
+            color: white; border-radius: 6px; box-sizing: border-box; font-size: 13px; margin-bottom: 5px;
         }
 
-        .btn:hover { background: #2980b9; }
-        .btn-danger { background: #e74c3c; }
-        .btn-danger:hover { background: #c0392b; }
-        .btn-success { background: #2ecc71; }
-        .btn-success:hover { background: #27ae60; }
+        .asset-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        .asset-item {
+            background: #1e293b; border: 1px solid #475569; border-radius: 6px;
+            padding: 8px; text-align: center; cursor: pointer; font-size: 20px; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .asset-item:hover { transform: scale(1.15); border-color: var(--primary); background: #334155; }
 
-        .select-input, .color-input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+        /* WORKSPACE KHÔNG GIAN 3D */
+        .workspace { 
+            flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            position: relative; padding: 20px; background: radial-gradient(circle, #243249 0%, #0f172a 100%);
+        }
+        
+        .page-navigation { display: flex; align-items: center; gap: 20px; margin-bottom: 25px; z-index: 120; }
+        .page-indicator { font-size: 14px; font-weight: bold; color: #cbd5e1; background: #1e293b; padding: 6px 16px; border-radius: 20px; border: 1px solid #334155; }
+
+        /* KHUNG SÁCH LẬT ENGINE 3D */
+        .book-container { 
+            width: calc(var(--book-w) * 2); height: var(--book-h); 
+            position: relative; perspective: 2500px; transform-style: preserve-3d;
+        }
+        .book-spine {
+            position: absolute; left: 50%; top: 0; bottom: 0; width: 14px;
+            background: linear-gradient(to right, rgba(0,0,0,0.5) 0%, rgba(255,255,255,0.1) 50%, rgba(0,0,0,0.5) 100%);
+            z-index: 100; transform: translateX(-50%); box-shadow: 0 0 10px rgba(0,0,0,0.6);
         }
 
-        /* Thư viện sticker */
-        .sticker-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-
-        .sticker-item {
-            font-size: 24px;
-            text-align: center;
-            cursor: grab;
-            padding: 5px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            background: #f9f9f9;
-        }
-
-        .sticker-item:hover { background: #e1e1e1; }
-
-        /* Vùng hiển thị sách 3D */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            padding: 20px;
-        }
-
-        .book-container {
-            perspective: 1500px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 80%;
-        }
-
-        .book {
-            position: relative;
-            width: 700px;
-            height: 450px;
-            transition: transform 0.5s;
+        /* Cấu trúc Tờ Giấy (Sheet) gồm 2 mặt để lật */
+        .book-sheet {
+            position: absolute; width: var(--book-w); height: 100%; top: 0;
             transform-style: preserve-3d;
-            display: flex;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
+        }
+        /* Tờ giấy nằm bên phải ban đầu, lật tâm trái */
+        .book-sheet.right-oriented {
+            left: 50%; transform-origin: left center;
+        }
+        /* Trạng thái lật về bên trái */
+        .book-sheet.right-oriented.flipped {
+            transform: rotateY(-180deg);
         }
 
-        /* Trang sách */
-        .page {
-            width: 50%;
-            height: 100%;
-            background: white;
-            position: relative;
-            box-shadow: inset 3px 0 10px rgba(0,0,0,0.1), 5px 5px 15px rgba(0,0,0,0.1);
-            padding: 30px;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+        /* Các mặt của trang giấy */
+        .page-face {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0; 
+            backface-visibility: hidden; padding: 45px; overflow: hidden;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.15);
+        }
+        /* Mặt trước (Nhìn thấy khi ở bên phải) */
+        .page-face.front {
+            transform: rotateY(0deg); z-index: 2;
+            border-radius: 2px 12px 12px 2px;
+        }
+        /* Mặt sau (Nhìn thấy khi lật sang bên trái) */
+        .page-face.back {
+            transform: rotateY(180deg); z-index: 1;
+            border-radius: 12px 2px 2px 12px;
         }
 
-        .page-left {
-            border-top-left-radius: 10px;
-            border-bottom-left-radius: 10px;
-            border-right: 2px dashed #ccc;
+        /* THÀNH PHẦN KÉO THẢ */
+        .element { position: absolute; cursor: move; padding: 5px; border: 1px dashed transparent; }
+        .element.selected { border: 2px solid var(--primary); background: rgba(99, 102, 241, 0.04); z-index: 999; }
+        .element .delete-btn {
+            position: absolute; top: -12px; right: -12px; background: #ef4444; color: white;
+            border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: none;
+            align-items: center; justify-content: center; cursor: pointer; z-index: 1000;
         }
+        .element.selected .delete-btn { display: flex; }
 
-        .page-right {
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
+        .element-text { font-size: 18px; outline: none; word-break: break-word; user-select: text; min-width: 60px; color: inherit; line-height: 1.4;}
+        .element-img { width: 140px; height: auto; pointer-events: none; border-radius: 6px; display: block; }
+        .element-icon { font-size: 48px; line-height: 1; }
+
+        .room-indicator {
+            position: absolute; top: 20px; left: 20px; background: #10b981; padding: 8px 12px;
+            border-radius: 6px; font-size: 12px; font-weight: bold; border: 1px solid #059669; z-index: 200;
         }
-
-        /* Các phần tử kéo thả bên trong trang */
-        .element-wrap {
-            position: absolute;
-            cursor: move;
-            user-select: none;
-            padding: 5px;
-            border: 1px dashed transparent;
-        }
-
-        .element-wrap:hover, .element-wrap.active {
-            border-color: #3498db;
-        }
-
-        .element-text {
-            outline: none;
-            min-width: 50px;
-            word-wrap: break-word;
-        }
-
-        .element-img {
-            max-width: 150px;
-            max-height: 150px;
-            object-fit: contain;
-            pointer-events: none;
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .element-wrap:hover .delete-btn {
-            display: flex;
-        }
-
-        /* Điều hướng Trước / Sau */
-        .nav-controls {
-            margin-top: 20px;
-            display: flex;
-            gap: 20px;
-        }
-
-        .nav-btn {
-            padding: 10px 20px;
-            background: #2c3e50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .nav-btn:hover { background: #34495e; }
-
-        .page-number {
-            position: absolute;
-            bottom: 10px;
-            font-size: 12px;
-            color: #999;
-        }
-        .page-left .page-number { left: 20px; }
-        .page-right .page-number { right: 20px; }
-
-        .tip-box {
-            font-size: 12px;
-            color: #666;
-            background: #fff3cd;
-            padding: 8px;
-            border-left: 3px solid #ffc107;
-            margin-top: 5px;
-        }
+        .page-num { position: absolute; bottom: 15px; font-size: 12px; color: #64748b; font-weight: bold; }
+        .front .page-num { right: 20px; } .back .page-num { left: 20px; }
+        .cover-style { color: #ffffff !important; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-header">
-            <h2><i class="fa-solid fa-book-open"></i> Sổ Tay 3D Canva</h2>
+        <h2><i class="fa-solid fa-users" style="color:var(--primary)"></i> Sổ Tay Đồng Bộ 3D</h2>
+        
+        <div class="section" style="background: #0284c7; border-color: #0369a1;">
+            <span class="label" style="color: white;"><i class="fa-solid fa-link"></i> Mời người khác chỉnh sửa:</span>
+            <button class="btn btn-secondary" onclick="copyShareLink()"><i class="fa-solid fa-copy"></i> Sao chép Link Phòng</button>
+        </div>
+
+        <div class="section" id="coverConfigSection" style="display: none; background: #2e1065; border-color: #6b21a8;">
+            <span class="label" style="color:#d8b4fe;"><i class="fa-solid fa-star"></i> Thiết kế trang bìa:</span>
+            <input type="text" id="coverTitleField" placeholder="Nhập tên sổ tay..." oninput="updateCoverData()">
+            <input type="color" id="coverColorField" oninput="updateCoverData()">
         </div>
 
         <div class="section">
-            <div class="section-title"><i class="fa-solid fa-share-nodes"></i> Chế độ chia sẻ</div>
-            <select class="select-input">
-                <option>Ai có link cũng sửa được</option>
-                <option>Chỉ mình tôi</option>
+            <span class="label">Quản lý trang nội dung:</span>
+            <button class="btn btn-secondary" onclick="addPagePair()"><i class="fa-solid fa-plus"></i> Chèn 2 Trang Mới</button>
+        </div>
+
+        <div class="section">
+            <span class="label">Thêm nội dung:</span>
+            <button class="btn" onclick="addNewElement('text', 'Nhấp đúp viết chữ...')"><i class="fa-solid fa-font"></i> Chèn Khung Chữ</button>
+        </div>
+
+        <div class="section">
+            <span class="label"><i class="fa-solid fa-file-arrow-up"></i> Hình ảnh:</span>
+            <button class="btn btn-secondary" onclick="document.getElementById('fileLoader').click()">Tải ảnh lên</button>
+            <input type="file" id="fileLoader" accept="image/*" style="display: none;" onchange="uploadImage(event)">
+        </div>
+
+        <div class="section">
+            <span class="label"><i class="fa-solid fa-icons"></i> Biểu tượng trang trí:</span>
+            <div class="asset-grid">
+                <div class="asset-item" onclick="addNewElement('icon', 'fa-solid fa-star')"><i class="fa-solid fa-star"></i></div>
+                <div class="asset-item" onclick="addNewElement('icon', 'fa-solid fa-heart')"><i class="fa-solid fa-heart"></i></div>
+                <div class="asset-item" onclick="addNewElement('icon', 'fa-solid fa-fire')"><i class="fa-solid fa-fire"></i></div>
+                <div class="asset-item" onclick="addNewElement('icon', 'fa-solid fa-cat')"><i class="fa-solid fa-cat"></i></div>
+            </div>
+        </div>
+
+        <div class="section" id="editorPanel" style="display:none; background: #475569;">
+            <span class="label" style="color:#67e8f9;"><i class="fa-solid fa-sliders"></i> Tùy chỉnh đối tượng:</span>
+            <select id="fontSelector" onchange="applyFont(this.value)">
+                <option value="'Noto Sans VN'">Noto Sans</option>
+                <option value="'Montserrat'">Montserrat</option>
+                <option value="'Quicksand'">Quicksand</option>
+                <option value="'Caveat'">Caveat (Viết tay)</option>
             </select>
-        </div>
-
-        <div class="section">
-            <div class="section-title"><i class="fa-solid fa-paste"></i> Quản lý trang nội dung</div>
-            <button class="btn btn-success" onclick="addPagePair()"><i class="fa-solid fa-plus"></i> Chèn 2 Trang Mới</button>
-            <button class="btn btn-danger" onclick="deleteCurrentPair()"><i class="fa-solid fa-trash"></i> Xóa cặp trang này</button>
-        </div>
-
-        <div class="section">
-            <div class="section-title"><i class="fa-solid fa-font"></i> Thêm nội dung</div>
-            <button class="btn" onclick="addTextBox()"><i class="fa-solid fa-paragraph"></i> Chèn Khung Chữ</button>
-        </div>
-
-        <div class="section">
-            <div class="section-title"><i class="fa-solid fa-image"></i> Chèn hình ảnh thông minh</div>
-            <input type="file" id="imageLoader" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
-            <button class="btn" onclick="document.getElementById('imageLoader').click()"><i class="fa-solid fa-upload"></i> Tải ảnh lên từ máy</button>
-            <div class="tip-box">
-                💡 **Mẹo:** Nhấn **Ctrl + V** tại trang web này để dán trực tiếp hình chụp màn hình!
+            <div style="display:flex; gap: 5px; margin-top: 5px;">
+                <button class="btn" style="background:#1e293b;" onclick="applySize(4)"><i class="fa-solid fa-plus"></i> Phóng to</button>
+                <button class="btn" style="background:#1e293b;" onclick="applySize(-4)"><i class="fa-solid fa-minus"></i> Thu nhỏ</button>
             </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title"><i class="fa-solid fa-icons"></i> Thư viện biểu tượng</div>
-            <div class="sticker-grid">
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">🌸</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">⭐</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">❤️</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">🍀</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">🐱</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">🎉</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">🎨</div>
-                <div class="sticker-item" draggable="true" ondragstart="dragSticker(event)">✨</div>
+            <div style="display: flex; gap: 10px; margin-top: 5px;">
+                <div style="flex:1;">
+                    <label class="label">Màu chữ:</label>
+                    <input type="color" id="textColorPicker" oninput="applyColor(this.value)">
+                </div>
+                <div style="flex:1;">
+                    <label class="label">Nền trang:</label>
+                    <input type="color" id="pageBgPicker" oninput="applyPageBg(this.value)">
+                </div>
             </div>
-        </div>
-
-        <div class="section">
-            <div class="section-title"><i class="fa-solid fa-sliders"></i> Tùy chỉnh đối tượng</div>
-            <label>Phông chữ:</label>
-            <select id="fontFamilySelect" class="select-input" onchange="changeFont()">
-                <option value="'Noto Sans', sans-serif">Noto Sans (Mặc định)</option>
-                <option value="'Montserrat', sans-serif">Montserrat</option>
-                <option value="'Quicksand', sans-serif">Quicksand dễ thương</option>
-                <option value="'Dancing Script', cursive">Dancing Script viết tay</option>
-                <option value="'Caveat', cursive">Caveat nét bút mực</option>
-            </select>
-
-            <label>Kích thước:</label>
-            <div style="display:flex; gap:5px;">
-                <button class="btn" onclick="changeSize(2)" style="margin-bottom:0;"><i class="fa-solid fa-plus"></i> To lên</button>
-                <button class="btn" onclick="changeSize(-2)" style="margin-bottom:0;"><i class="fa-solid fa-minus"></i> Nhỏ đi</button>
-            </div>
-
-            <label style="margin-top:10px; display:block;">Màu sắc chữ:</label>
-            <input type="color" id="textColorInput" class="color-input" value="#000000" onchange="changeColor()">
-
-            <label>Nền trang sách:</label>
-            <input type="color" id="pageBgInput" class="color-input" value="#ffffff" onchange="changePageBg()">
-        </div>
-
-        <div class="section">
-            <button class="btn btn-success" style="background:#8e44ad;" onclick="exportToImage()"><i class="fa-solid fa-file-image"></i> XUẤT BẢN THÀNH ẢNH</button>
         </div>
     </div>
 
-    <div class="main-content" id="dropZone" ondragover="allowDrop(event)" ondrop="dropStickerToPage(event)">
-        <div class="book-container">
-            <div class="book" id="bookCanvas">
-                <div class="page page-left" id="leftPage">
-                    <div class="page-number" id="leftPageNum">Trang 1</div>
-                </div>
-                <div class="page page-right" id="rightPage">
-                    <div class="page-number" id="rightPageNum">Trang 2</div>
-                </div>
-            </div>
+    <div class="workspace">
+        <div class="room-indicator" id="roomTag">Phòng: ...</div>
+
+        <div class="page-navigation">
+            <button class="btn" style="width:100px; margin:0;" onclick="turnPage(-1)"><i class="fa-solid fa-chevron-left"></i> Trước</button>
+            <div class="page-indicator" id="pageIndicator">Đang kết nối...</div>
+            <button class="btn" style="width:100px; margin:0;" onclick="turnPage(1)">Sau <i class="fa-solid fa-chevron-right"></i></button>
         </div>
 
-        <div class="nav-controls">
-            <button class="nav-btn" onclick="prevPage()"><i class="fa-solid fa-chevron-left"></i> Trước</button>
-            <span id="pageDisplayStatus" style="line-height:40px; font-weight:bold;">Đang xem tập 1-2</span>
-            <button class="nav-btn" onclick="nextPage()">Sau <i class="fa-solid fa-chevron-right"></i></button>
-        </div>
+        <div class="book-container" id="bookContainer" onclick="clearSelection()">
+            <div class="book-spine"></div>
+            </div>
     </div>
 
     <script>
-        // Quản lý dữ liệu các trang sách
-        let currentPagePair = 0; // Cặp trang hiện tại (0 nghĩa là trang 1-2, 1 là trang 3-4...)
-        let bookData = [
-            { leftHtml: '', rightHtml: '', leftBg: '#ffffff', rightBg: '#ffffff' }
-        ];
+        let roomCode = '';
+        let selectedId = null;
+        let currentPagePair = 0; // Cặp trang hiện tại người dùng đang nhìn thấy
 
-        let selectedElement = null;
-        let activeDragStickerText = '';
+        // Cấu trúc dữ liệu Yjs đồng bộ hóa đám mây P2P giữa các máy tính
+        let ydoc, ymap, sharedPages;
 
-        // Khởi tạo trang ban đầu
-        function initBook() {
-            renderPages();
-        }
-
-        // Render dữ liệu lên 2 trang hiện tại
-        function renderPages() {
-            const currentData = bookData[currentPagePair];
-            
-            // Lưu lại dữ liệu cũ trước khi render trang mới (nếu có phần tử)
-            saveCurrentPageData();
-
-            // Thiết lập số trang
-            document.getElementById('leftPageNum').innerText = `Trang ${currentPagePair * 2 + 1}`;
-            document.getElementById('rightPageNum').innerText = `Trang ${currentPagePair * 2 + 2}`;
-            document.getElementById('pageDisplayStatus').innerText = `Đang xem trang ${currentPagePair * 2 + 1} - ${currentPagePair * 2 + 2}`;
-
-            // Phục hồi HTML và màu nền
-            const leftPage = document.getElementById('leftPage');
-            const rightPage = document.getElementById('rightPage');
-
-            // Xóa sạch các element cũ trừ số trang
-            clearPageElements(leftPage);
-            clearPageElements(rightPage);
-
-            leftPage.style.backgroundColor = bookData[currentPagePair].leftBg || '#ffffff';
-            rightPage.style.backgroundColor = bookData[currentPagePair].rightBg || '#ffffff';
-
-            // Chèn lại các element đã lưu
-            if(bookData[currentPagePair].leftHtml) {
-                leftPage.insertAdjacentHTML('beforeend', bookData[currentPagePair].leftHtml);
+        function initCollaboration() {
+            const urlParams = new URLSearchParams(window.location.search);
+            roomCode = urlParams.get('room');
+            if (!roomCode) {
+                roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+                window.history.pushState({}, '', '?room=' + roomCode);
             }
-            if(bookData[currentPagePair].rightHtml) {
-                rightPage.insertAdjacentHTML('beforeend', bookData[currentPagePair].rightHtml);
-            }
+            document.getElementById("roomTag").innerText = "Mã phòng: " + roomCode;
 
-            makeElementsInteractive();
-        }
+            // Thiết lập Yjs và WebRTC Provider
+            ydoc = new Y.Doc();
+            const provider = new Y.WebrtcProvider('3d-notebook-room-' + roomCode, ydoc, {
+                signaling: ['wss://signaling.yjs.dev']
+            });
 
-        function clearPageElements(pageNode) {
-            const elements = pageNode.querySelectorAll('.element-wrap');
-            elements.forEach(el => el.remove());
-        }
+            ymap = ydoc.getMap('notebook_meta');
+            sharedPages = ydoc.getArray('notebook_pages');
 
-        function saveCurrentPageData() {
-            // Sao lưu cấu trúc HTML hiện tại của cặp trang vào mảng tạm
-            const leftPage = document.getElementById('leftPage').cloneNode(true);
-            const rightPage = document.getElementById('rightPage').cloneNode(true);
-            
-            clearPageElements(leftPage); // Chỉ lấy phần lưu trữ sạch
-            
-            // Quét và nạp lại HTML hiện tại của các node element
-            bookData[currentPagePair].leftHtml = Array.from(document.getElementById('leftPage').querySelectorAll('.element-wrap')).map(el => el.outerHTML).join('');
-            bookData[currentPagePair].rightHtml = Array.from(document.getElementById('rightPage').querySelectorAll('.element-wrap')).map(el => el.outerHTML).join('');
-        }
+            // Lắng nghe sự thay đổi từ những người dùng khác để render lại tức thì
+            sharedPages.observeDeep(() => {
+                renderBook3DEngine();
+            });
 
-        // Thêm cặp trang mới
-        function addPagePair() {
-            saveCurrentPageData();
-            bookData.push({ leftHtml: '', rightHtml: '', leftBg: '#ffffff', rightBg: '#ffffff' });
-            currentPagePair = bookData.length - 1;
-            renderPages();
-        }
-
-        // Xóa cặp trang hiện tại
-        function deleteCurrentPair() {
-            if(bookData.length === 1) {
-                alert("Không thể xóa cặp trang duy nhất còn lại!");
-                return;
-            }
-            bookData.splice(currentPagePair, 1);
-            if(currentPagePair > 0) currentPagePair--;
-            renderPages();
-        }
-
-        function nextPage() {
-            if(currentPagePair < bookData.length - 1) {
-                saveCurrentPageData();
-                currentPagePair++;
-                renderPages();
-            }
-        }
-
-        function prevPage() {
-            if(currentPagePair > 0) {
-                saveCurrentPageData();
-                currentPagePair--;
-                renderPages();
-            }
-        }
-
-        // Tạo phần tử Khung Chữ độc lập kéo thả
-        function addTextBox() {
-            const wrap = document.createElement('div');
-            wrap.className = 'element-wrap';
-            wrap.style.left = '50px';
-            wrap.style.top = '100px';
-            wrap.innerHTML = `<div class="element-text" contenteditable="true">Nhấp đúp để nhập chữ...</div><div class="delete-btn" onclick="this.parentElement.remove()">X</div>`;
-            
-            document.getElementById('leftPage').appendChild(wrap);
-            makeElementsInteractive();
-        }
-
-        // Kéo thả biểu tượng (Sticker)
-        function dragSticker(e) {
-            activeDragStickerText = e.target.innerText;
-        }
-
-        function allowDrop(e) { e.preventDefault(); }
-
-        function dropStickerToPage(e) {
-            e.preventDefault();
-            const targetPage = e.target.closest('.page');
-            if (!targetPage) return;
-
-            const rect = targetPage.getBoundingClientRect();
-            const x = e.clientX - rect.left - 15;
-            const y = e.clientY - rect.top - 15;
-
-            const wrap = document.createElement('div');
-            wrap.className = 'element-wrap';
-            wrap.style.left = x + 'px';
-            wrap.style.top = y + 'px';
-            wrap.innerHTML = `<div class="element-text" style="font-size:32px;">${activeDragStickerText}</div><div class="delete-btn" onclick="this.parentElement.remove()">X</div>`;
-            
-            targetPage.appendChild(wrap);
-            makeElementsInteractive();
-        }
-
-        // Đọc ảnh tải lên
-        function handleImageUpload(e) {
-            const file = e.target.files[0];
-            if(file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    insertImageToPage(event.target.result);
+            provider.on('synced', () => {
+                if (sharedPages.length === 0) {
+                    // Tạo dữ liệu mặc định ban đầu nếu phòng mới tinh
+                    sharedPages.push([
+                        { isCover: true, bg: "#311b92", title: "SỔ TAY COLLAB", isFirst: true, elements: {} },
+                        { bg: "#fcfbf7", elements: {} },
+                        { bg: "#fcfbf7", elements: {} },
+                        { isCover: true, bg: "#1e293b", title: "TRANG KẾT", isLast: true, elements: {} }
+                    ]);
                 }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // Lắng nghe sự kiện Ctrl + V để dán ảnh thông minh
-        window.addEventListener('paste', function(e) {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let index in items) {
-                const item = items[index];
-                if (item.kind === 'file') {
-                    const blob = item.getAsFile();
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        insertImageToPage(event.target.result);
-                    };
-                    reader.readAsDataURL(blob);
-                }
-            }
-        });
-
-        function insertImageToPage(src) {
-            const wrap = document.createElement('div');
-            wrap.className = 'element-wrap';
-            wrap.style.left = '40px';
-            wrap.style.top = '40px';
-            wrap.innerHTML = `<img src="${src}" class="element-img"><div class="delete-btn" onclick="this.parentElement.remove()">X</div>`;
-            document.getElementById('leftPage').appendChild(wrap);
-            makeElementsInteractive();
-        }
-
-        // Xử lý kéo thả di chuyển linh hoạt cho mọi Object trong trang
-        function makeElementsInteractive() {
-            const elements = document.querySelectorAll('.element-wrap');
-            elements.forEach(el => {
-                el.addEventListener('mousedown', function(e) {
-                    if (e.target.classList.contains('delete-btn') || e.target.getAttribute('contenteditable') === 'true') return;
-                    
-                    selectedElement = el;
-                    // Bỏ chọn tất cả các element khác
-                    elements.forEach(item => item.classList.remove('active'));
-                    el.classList.add('active');
-
-                    let shiftX = e.clientX - el.getBoundingClientRect().left;
-                    let shiftY = e.clientY - el.getBoundingClientRect().top;
-
-                    function moveAt(pageX, pageY) {
-                        const parentPage = el.parentElement;
-                        const pRect = parentPage.getBoundingClientRect();
-                        let leftPos = pageX - pRect.left - shiftX;
-                        let topPos = pageY - pRect.top - shiftY;
-                        
-                        el.style.left = leftPos + 'px';
-                        el.style.top = topPos + 'px';
-                    }
-
-                    function onMouseMove(e) {
-                        moveAt(e.clientX, e.clientY);
-                    }
-
-                    document.addEventListener('mousemove', onMouseMove);
-
-                    document.onmouseup = function() {
-                        document.removeEventListener('mousemove', onMouseMove);
-                        document.onmouseup = null;
-                    };
-                });
-
-                // Ngăn chặn hành vi kéo mặc định của trình duyệt lên hình ảnh
-                el.ondragstart = function() { return false; };
+                renderBook3DEngine();
             });
         }
 
-        // Tùy chỉnh thuộc tính Text/Bìa cứng
-        function changeFont() {
-            if(selectedElement) {
-                const textNode = selectedElement.querySelector('.element-text');
-                if(textNode) textNode.style.fontFamily = document.getElementById('fontFamilySelect').value;
-            }
-        }
+        function renderBook3DEngine() {
+            const container = document.getElementById("bookContainer");
+            
+            // Lưu lại danh sách các sheet đang có để xử lý hiệu ứng lật mượt mà
+            container.querySelectorAll('.book-sheet').forEach(el => el.remove());
 
-        function changeSize(amount) {
-            if(selectedElement) {
-                const textNode = selectedElement.querySelector('.element-text');
-                if(textNode) {
-                    let currentSize = parseInt(window.getComputedStyle(textNode).fontSize) || 16;
-                    textNode.style.fontSize = (currentSize + amount) + 'px';
+            let totalPages = sharedPages.length;
+            let totalSheets = Math.floor(totalPages / 2);
+
+            // Tạo các đối tượng Sheet vật lý dựa trên dữ liệu mảng
+            for (let i = 0; i < totalSheets; i++) {
+                let frontIdx = i * 2;
+                let backIdx = frontIdx + 1;
+
+                let pageFront = sharedPages.get(frontIdx);
+                let pageBack = sharedPages.get(backIdx);
+
+                let sheetDiv = document.createElement("div");
+                sheetDiv.className = "book-sheet right-oriented";
+                sheetDiv.style.zIndex = totalSheets - i; // Sắp xếp thứ tự đè lớp của giấy
+
+                // HIỆU ỨNG LẬT SÁCH 3D: Tính toán xem sheet này nằm bên trái hay bên phải
+                if (i < currentPagePair) {
+                    sheetDiv.classList.add("flipped");
+                    sheetDiv.style.zIndex = i + 1; // Đảo chiều z-index khi lật sang trái
                 }
+
+                // Thiết lập mặt trước (Front Face)
+                let frontFace = document.createElement("div");
+                frontFace.className = "page-face front";
+                fillFaceContent(frontFace, pageFront, frontIdx);
+
+                // Thiết lập mặt sau (Back Face)
+                let backFace = document.createElement("div");
+                backFace.className = "page-face back";
+                fillFaceContent(backFace, pageBack, backIdx);
+
+                sheetDiv.appendChild(frontFace);
+                sheetDiv.appendChild(backFace);
+                container.appendChild(sheetDiv);
+            }
+
+            // Cập nhật thanh hiển thị trang thái số trang
+            let displayLeft = currentPagePair * 2;
+            let displayRight = displayLeft + 1;
+            document.getElementById("pageIndicator").innerText = `Trang ${displayLeft} - ${displayRight} / ${totalPages}`;
+            
+            // Cập nhật bảng chỉnh sửa bìa nếu đang ở trang bìa
+            let activePage = sharedPages.get(displayLeft);
+            if (activePage && activePage.isCover) {
+                document.getElementById("coverConfigSection").style.display = "block";
+                document.getElementById("coverTitleField").value = activePage.title || "";
+                document.getElementById("coverColorField").value = activePage.bg || "#311b92";
+            } else {
+                document.getElementById("coverConfigSection").style.display = "none";
             }
         }
 
-        function changeColor() {
-            if(selectedElement) {
-                const textNode = selectedElement.querySelector('.element-text');
-                if(textNode) textNode.style.color = document.getElementById('textColorInput').value;
-            }
-        }
+        function fillFaceContent(faceNode, page, pageIdx) {
+            if (!page) return;
+            faceNode.style.backgroundColor = page.bg || "#fcfbf7";
 
-        function changePageBg() {
-            const color = document.getElementById('pageBgInput').value;
-            document.getElementById('leftPage').style.backgroundColor = color;
-            document.getElementById('rightPage').style.backgroundColor = color;
-            bookData[currentPagePair].leftBg = color;
-            bookData[currentPagePair].rightBg = color;
-        }
-
-        // Chức năng Xuất bản thành ảnh bằng thư viện html2canvas
-        function exportToImage() {
-            saveCurrentPageData();
-            // Ẩn tạm thời các nút xóa "X" để ảnh xuất ra đẹp mắt
-            const deleteButtons = document.querySelectorAll('.delete-btn');
-            deleteButtons.forEach(btn => btn.style.display = 'none');
-
-            const bookCanvas = document.getElementById('bookCanvas');
-            html2canvas(bookCanvas, { useCORS: true }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `so-tay-3d-trang-${currentPagePair*2+1}-${currentPagePair*2+2}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
+            if (page.isCover) {
+                faceNode.classList.add("cover-style");
+                faceNode.innerHTML = `
+                    <i class="fa-solid fa-bookmark" style="font-size:44px;color:#fde047;"></i>
+                    <h1 style="margin:18px 0 6px 0; font-size:28px; color:white;">${page.title || 'BÌA SÁCH'}</h1>
+                    <p style="font-size:11px;opacity:0.4;margin:0;">TRANG BÌA ĐỒNG BỘ</p>
+                `;
+            } else {
+                faceNode.classList.remove("cover-style");
+                faceNode.innerHTML = `<div class="page-num">Trang ${pageIdx}</div>`;
                 
-                // Khôi phục lại trạng thái nút xóa
-                deleteButtons.forEach(btn => btn.style.removeAttribute);
-            });
+                // Vẽ các thành phần kéo thả
+                Object.values(page.elements || {}).forEach(el => {
+                    let div = document.createElement("div");
+                    div.className = "element";
+                    div.id = el.id;
+                    div.style.left = el.x + "px";
+                    div.style.top = el.y + "px";
+                    if (selectedId === el.id) div.classList.add("selected");
+
+                    let deleteBtn = document.createElement("div");
+                    deleteBtn.className = "delete-btn";
+                    deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                    deleteBtn.onclick = (e) => { e.stopPropagation(); deleteElement(pageIdx, el.id); };
+                    div.appendChild(deleteBtn);
+
+                    if (el.type === 'text') {
+                        let txt = document.createElement("div");
+                        txt.className = "element-text";
+                        txt.contentEditable = true;
+                        txt.style.fontFamily = el.fontFamily || 'inherit';
+                        txt.style.fontSize = (el.size || 18) + "px";
+                        txt.style.color = el.color || '#000000';
+                        txt.innerText = el.content;
+                        txt.onblur = () => { updateTextContent(pageIdx, el.id, txt.innerText); };
+                        div.appendChild(txt);
+                    } else if (el.type === 'icon') {
+                        let icon = document.createElement("i");
+                        icon.className = `${el.content} element-icon`;
+                        icon.style.fontSize = (el.size || 48) + "px";
+                        icon.style.color = el.color || '#6366f1';
+                        div.appendChild(icon);
+                    } else if (el.type === 'image') {
+                        let img = document.createElement("img");
+                        img.className = "element-img";
+                        img.src = el.content;
+                        img.style.width = (el.size || 140) + "px";
+                        div.appendChild(img);
+                    }
+
+                    div.onmousedown = (e) => { e.stopPropagation(); selectElement(el.id); dragStart(e, pageIdx, el); };
+                    faceNode.appendChild(div);
+                });
+            }
         }
 
-        // Chạy ứng dụng khi mở trang web
-        window.onload = initBook;
+        // --- XỬ LÝ SỰ KIỆN KÉO THẢ & CHỈNH SỬA REALTIME ---
+        function dragStart(e, pageIdx, el) {
+            let startX = e.clientX; let startY = e.clientY;
+            let origX = el.x; let origY = el.y;
+            
+            function dragging(ev) {
+                let dx = ev.clientX - startX;
+                let dy = ev.clientY - startY;
+                let newX = origX + dx;
+                let newY = origY + dy;
+                
+                let node = document.getElementById(el.id);
+                if (node) { node.style.left = newX + "px"; node.style.top = newY + "px"; }
+                
+                // Cập nhật trực tiếp vào Yjs để mọi máy khác nhìn thấy vật thể chuyển động mượt mà
+                let pageData = sharedPages.get(pageIdx);
+                pageData.elements[el.id].x = newX;
+                pageData.elements[el.id].y = newY;
+                sharedPages.delete(pageIdx);
+                sharedPages.insert(pageIdx, [pageData]);
+            }
+            function dragEnd() { window.removeEventListener('mousemove', dragging); window.removeEventListener('mouseup', dragEnd); }
+            window.addEventListener('mousemove', dragging);
+            window.addEventListener('mouseup', dragEnd);
+        }
+
+        function addNewElement(type, content) {
+            let targetPageIdx = currentPagePair * 2;
+            let pageData = sharedPages.get(targetPageIdx);
+            if (!pageData || pageData.isCover) {
+                targetPageIdx += 1;
+                pageData = sharedPages.get(targetPageIdx);
+            }
+            if (pageData.isCover) return;
+
+            let id = 'el_' + Date.now();
+            if (!pageData.elements) pageData.elements = {};
+            
+            pageData.elements[id] = {
+                id: id, type: type, content: content, x: 60, y: 60, 
+                size: type==='image'?140 : (type==='icon'?48:18), color: '#000000'
+            };
+
+            sharedPages.delete(targetPageIdx);
+            sharedPages.insert(targetPageIdx, [pageData]);
+            selectElement(id);
+        }
+
+        function updateTextContent(pageIdx, elId, val) {
+            let pageData = sharedPages.get(pageIdx);
+            if (pageData.elements[elId]) {
+                pageData.elements[elId].content = val;
+                sharedPages.delete(pageIdx);
+                sharedPages.insert(pageIdx, [pageData]);
+            }
+        }
+
+        function deleteElement(pageIdx, elId) {
+            let pageData = sharedPages.get(pageIdx);
+            delete pageData.elements[elId];
+            sharedPages.delete(pageIdx);
+            sharedPages.insert(pageIdx, [pageData]);
+            clearSelection();
+        }
+
+        function turnPage(dir) {
+            let totalSheets = Math.floor(sharedPages.length / 2);
+            let nextPair = currentPagePair + dir;
+            if (nextPair >= 0 && nextPair < totalSheets) {
+                currentPagePair = nextPair;
+                renderBook3DEngine(); // Thực hiện lật trang với hiệu ứng CSS mượt mà
+            }
+        }
+
+        function addPagePair() {
+            let len = sharedPages.length;
+            // Chèn 2 trang nội dung mới vào áp chót (ngay trước trang bìa kết)
+            sharedPages.insert(len - 1, [
+                { bg: "#fcfbf7", elements: {} },
+                { bg: "#fcfbf7", elements: {} }
+            ]);
+        }
+
+        function updateCoverData() {
+            let idx = currentPagePair * 2;
+            let pageData = sharedPages.get(idx);
+            if(!pageData.isCover) {
+                idx += 1; pageData = sharedPages.get(idx);
+            }
+            pageData.title = document.getElementById("coverTitleField").value;
+            pageData.bg = document.getElementById("coverColorField").value;
+            sharedPages.delete(idx);
+            sharedPages.insert(idx, [pageData]);
+        }
+
+        // Tùy chỉnh Font, Size, Color
+        function applyFont(font) { modifySelectedElement(el => el.fontFamily = font); }
+        function applySize(diff) { modifySelectedElement(el => el.size = (el.size || 18) + diff); }
+        function applyColor(color) { modifySelectedElement(el => el.color = color); }
+        function applyPageBg(color) {
+            let idx = currentPagePair * 2;
+            let p = sharedPages.get(idx); if(p.isCover) { idx+=1; p=sharedPages.get(idx); }
+            p.bg = color; sharedPages.delete(idx); sharedPages.insert(idx, [p]);
+        }
+
+        function modifySelectedElement(callback) {
+            if (!selectedId) return;
+            for (let i = 0; i < sharedPages.length; i++) {
+                let p = sharedPages.get(i);
+                if (p.elements && p.elements[selectedId]) {
+                    callback(p.elements[selectedId]);
+                    sharedPages.delete(i);
+                    sharedPages.insert(i, [p]);
+                    break;
+                }
+            }
+        }
+
+        function selectElement(id) { selectedId = id; document.getElementById("editorPanel").style.display = "block"; }
+        function clearSelection() { selectedId = null; document.getElementById("editorPanel").style.display = "none"; }
+        
+        function uploadImage(e) {
+            let file = e.target.files[0]; if(!file) return;
+            let r = new FileReader(); r.onload = (ev) => addNewElement('image', ev.target.result); r.readAsDataURL(file);
+        }
+
+        function copyShareLink() {
+            navigator.clipboard.writeText(window.location.href);
+            alert("Đã sao chép link phòng! Gửi link này cho bạn bè để cùng sửa sổ tay theo thời gian thực.");
+        }
+
+        window.onload = initCollaboration;
     </script>
 </body>
 </html>
