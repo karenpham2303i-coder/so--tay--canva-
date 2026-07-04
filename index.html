@@ -2,45 +2,34 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Sổ Tay 3D - Đang kết nối</title>
-    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <title>Hệ Thống Phân Quyền</title>
 </head>
 <body style="background-color: #0f172a; color: white; font-family: sans-serif; padding: 20px;">
     
-    <h2 id="status">Đang khởi tạo hệ thống...</h2>
-    <div id="roleDisplay"></div>
+    <h2 id="roomDisplay">Đang tải...</h2>
+    <div id="roleDisplay">Đang xác định vai trò...</div>
 
     <script>
-        // 1. Khởi tạo kết nối Ably
-        const ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
-        
-        // 2. Xác định mã phòng (từ URL hoặc tự sinh)
-        let roomCode = new URLSearchParams(window.location.search).get('room');
-        if (!roomCode) {
+        // 1. Lấy mã phòng từ URL
+        const urlParams = new URLSearchParams(window.location.search);
+        let roomCode = urlParams.get('room');
+
+        // 2. LOGIC PHÂN QUYỀN
+        // Nếu có ?room=... trong link, nghĩa là bạn đang là khách vào phòng của người khác
+        if (roomCode) {
+            document.getElementById("roleDisplay").innerHTML = "<b>Bạn là Khách (Guest)</b>";
+            document.getElementById("roomDisplay").innerText = "Phòng số: " + roomCode;
+        } else {
+            // Nếu không có ?room=..., bạn là người tạo phòng mới
             roomCode = Math.floor(100000 + Math.random() * 900000).toString();
             window.history.pushState({}, '', '?room=' + roomCode);
+            
+            document.getElementById("roleDisplay").innerHTML = "<b>Bạn là CHỦ PHÒNG (Owner)</b>";
+            document.getElementById("roomDisplay").innerText = "Phòng mới của bạn: " + roomCode;
+            
+            // Lưu dấu vết vào máy bạn để xác nhận bạn là chủ
+            localStorage.setItem('is_owner_of_' + roomCode, 'true');
         }
-
-        // 3. Xác định quyền Owner qua LocalStorage
-        let isOwner = localStorage.getItem('owner_of_room_' + roomCode) === 'true';
-        
-        // Nếu vừa tạo phòng mới, tự nhận là Owner
-        if (!localStorage.getItem('owner_of_room_' + roomCode) && window.location.search.includes('room') && !document.referrer.includes(window.location.host)) {
-            // Trường hợp này logic đơn giản hóa cho phiên bản test
-        }
-        
-        // Nếu chưa có dấu vết, người đầu tiên vào sẽ là Owner
-        if (!localStorage.getItem('owner_of_room_' + roomCode)) {
-            localStorage.setItem('owner_of_room_' + roomCode, 'true');
-            isOwner = true;
-        }
-
-        // 4. Hiển thị trạng thái
-        document.getElementById("status").innerText = "Phòng số: " + roomCode;
-        document.getElementById("roleDisplay").innerHTML = isOwner ? 
-            "<b>Bạn là CHỦ PHÒNG (Owner)</b>" : "<b>Bạn là Khách (Guest)</b>";
-
-        console.log("Hệ thống đã sẵn sàng. Bạn là:", isOwner ? "Owner" : "Guest");
     </script>
 </body>
 </html>
