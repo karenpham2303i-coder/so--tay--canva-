@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sổ Tay 3D - Phiên Bản Premium</title>
+    <title>Sổ Tay 3D - Phiên Bản Premium Đồng Bộ Bảo Mật</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     
@@ -38,7 +38,6 @@
         .btn:hover { opacity: 0.9; transform: translateY(-1px); }
         .btn-secondary { background: #10b981; }
         .btn-danger { background: #ef4444; }
-        .btn-warning { background: var(--owner-color); color: #0f172a; }
 
         input, select, textarea {
             width: 100%; padding: 8px 12px; border: 1px solid #475569; background: #1e293b;
@@ -76,7 +75,7 @@
             transition: opacity 0.3s;
         }
 
-        /* LỚP SHEET GIẤY LẬT ĐỘNG (0.75s chuẩn không delay) */
+        /* LỚP SHEET GIẤY LẬT ĐỘNG (0.75s chuẩn theo yêu cầu ban đầu của bạn) */
         .book-page-sheet {
             position: absolute; width: 50%; height: 100%; top: 0; transform-style: preserve-3d;
             transition: transform 0.75s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s;
@@ -93,6 +92,12 @@
         }
         .page-face.front-face { z-index: 2; }
         .page-face.back-face { transform: rotateY(180deg); z-index: 1; }
+
+        /* Đổ bóng gờ giấy */
+        .left-side .front-face { border-radius: 12px 2px 2px 12px; box-shadow: inset -15px 0 20px rgba(0,0,0,0.05); }
+        .left-side .back-face { border-radius: 2px 12px 12px 2px; box-shadow: inset 15px 0 20px rgba(0,0,0,0.05); }
+        .right-side .front-face { border-radius: 2px 12px 12px 2px; box-shadow: inset 15px 0 20px rgba(0,0,0,0.05); }
+        .right-side .back-face { border-radius: 12px 2px 2px 12px; box-shadow: inset -15px 0 20px rgba(0,0,0,0.05); }
 
         /* THÀNH PHẦN KÉO THẢ */
         .element { position: absolute; cursor: move; padding: 5px; border: 1px dashed transparent; }
@@ -119,7 +124,7 @@
         .cover-style { color: #ffffff !important; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .invisible-sheet { opacity: 0 !important; pointer-events: none !important; box-shadow: none !important; }
 
-        /* MODAL LIÊN KẾT DUYỆT THÀNH VIÊN CỦA CHỦ SỞ HỮU */
+        /* DIALOG XIN PHÉP TRUY CẬP */
         .owner-modal {
             position: absolute; bottom: 20px; right: 20px; background: #1e293b; border: 2px solid var(--owner-color);
             padding: 15px; border-radius: 8px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -137,24 +142,24 @@
         
         <div class="section" style="background: #0f172a; border-color: #334155;">
             <span class="label"><i class="fa-solid fa-shield-halved"></i> Vai trò hệ thống:</span>
-            <div id="roleDisplay" style="font-weight: bold; color: #ef4444; margin-bottom: 5px;"><i class="fa-solid fa-user-lock"></i> Đang kiểm tra...</div>
+            <div id="roleDisplay" style="font-weight: bold; color: #ef4444; margin-bottom: 5px;"><i class="fa-solid fa-user-lock"></i> Đang kết nối mạng...</div>
             <div id="ownerSettings" style="display: none;">
-                <label class="label" style="color: var(--owner-color); margin-top: 5px;">Bảng điều khiển của bạn:</label>
+                <label class="label" style="color: var(--owner-color); margin-top: 5px;">Cấu hình mặc định phòng:</label>
                 <select id="defaultGuestPermission" onchange="changeDefaultPermission(this.value)">
-                    <option value="pending">Khóa: Phải đợi tôi duyệt (Mặc định)</option>
-                    <option value="viewer">Mở: Cho mọi người làm Người Xem</option>
+                    <option value="pending">Phải được tôi duyệt mới được vào (Bảo mật)</option>
+                    <option value="viewer">Cho phép mọi người tự do vào Xem</option>
                 </select>
             </div>
         </div>
 
-        <div class="section" id="coverConfigSection" style="display:none; background: #2e1065; border-color: #6b21a8;">
+        <div class="section edit-gate" id="coverConfigSection" style="display:none; background: #2e1065; border-color: #6b21a8;">
             <span class="label" style="color:#d8b4fe;"><i class="fa-solid fa-star"></i> Thiết kế trang bìa:</span>
             <input type="text" id="coverTitleField" placeholder="Nhập tên sổ tay..." oninput="updateCoverData()">
             <input type="color" id="coverColorField" oninput="updateCoverData()">
         </div>
 
         <div class="section edit-gate">
-            <span class="label">Quản lý trang:</span>
+            <span class="label">Quản lý trang nội dung:</span>
             <button class="btn btn-secondary" onclick="addPagePair()"><i class="fa-solid fa-plus"></i> Chèn 2 Trang Mới</button>
             <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelectedPagePair()"><i class="fa-solid fa-trash"></i> Xóa cặp trang này</button>
         </div>
@@ -166,27 +171,27 @@
 
         <div class="section edit-gate">
             <span class="label"><i class="fa-solid fa-images"></i> Chèn hình ảnh thông minh:</span>
-            <button class="btn btn-secondary" onclick="document.getElementById('fileImageLoader').click()"><i class="fa-solid fa-file-arrow-up"></i> Chọn ảnh từ máy tính</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('fileImageLoader').click()"><i class="fa-solid fa-file-arrow-up"></i> Tải ảnh lên từ máy</button>
             <input type="file" id="fileImageLoader" accept="image/*" style="display: none;" onchange="uploadLocalImage(event)">
-            <span class="flaticon-hint">💡 <b>Mẹo đỉnh cao:</b> Bạn có thể ấn <b>Ctrl + V</b> (Dán) ở bất kỳ đâu trên trang sách để nạp ảnh chụp màn hình vào ngay lập tức!</span>
+            <span class="flaticon-hint">💡 <b>Mẹo nâng cao:</b> Bạn có thể ấn <b>Ctrl + V</b> trên màn hình để dán thẳng ảnh chụp màn hình vào cuốn sách!</span>
         </div>
 
         <div class="section edit-gate">
             <span class="label"><i class="fa-solid fa-icons"></i> Thư viện biểu tượng trang trí:</span>
             <div class="icon-search-box">
-                <input type="text" id="iconSearchInput" placeholder="Tìm kiếm icon (Ví dụ: heart, star, home...)" onkeyup="filterIcons()">
+                <input type="text" id="iconSearchInput" placeholder="Tìm kiếm icon (Ví dụ: heart, star...)" onkeyup="filterIcons()">
             </div>
             <div class="asset-grid" id="iconLibraryGrid">
                 <div class="asset-item" title="Star" onclick="addNewElement('icon', 'fa-solid fa-star')"><i class="fa-solid fa-star"></i></div>
                 <div class="asset-item" title="Heart" onclick="addNewElement('icon', 'fa-solid fa-heart')"><i class="fa-solid fa-heart"></i></div>
                 <div class="asset-item" title="Crown" onclick="addNewElement('icon', 'fa-solid fa-crown')"><i class="fa-solid fa-crown"></i></div>
                 <div class="asset-item" title="Fire" onclick="addNewElement('icon', 'fa-solid fa-fire')"><i class="fa-solid fa-fire"></i></div>
-                <div class="asset-item" title="Thunber" onclick="addNewElement('icon', 'fa-solid fa-bolt')"><i class="fa-solid fa-bolt"></i></div>
+                <div class="asset-item" title="Thunder" onclick="addNewElement('icon', 'fa-solid fa-bolt')"><i class="fa-solid fa-bolt"></i></div>
                 <div class="asset-item" title="Gift" onclick="addNewElement('icon', 'fa-solid fa-gift')"><i class="fa-solid fa-gift"></i></div>
                 <div class="asset-item" title="Cat" onclick="addNewElement('icon', 'fa-solid fa-cat')"><i class="fa-solid fa-cat"></i></div>
                 <div class="asset-item" title="Coffee" onclick="addNewElement('icon', 'fa-solid fa-mug-hot')"><i class="fa-solid fa-mug-hot"></i></div>
             </div>
-            <span class="flaticon-hint">Cần tìm thêm biểu tượng độc quyền? Vào trực tiếp <a href="https://www.flaticon.com" target="_blank" class="flaticon-link">Flaticon.com <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
+            <span class="flaticon-hint">Tìm icon độc quyền bên <a href="https://www.flaticon.com" target="_blank" class="flaticon-link">Flaticon.com <i class="fa-solid fa-arrow-up-right-from-square"></i></a></span>
         </div>
 
         <div class="section edit-gate" id="editorPanel" style="display:none; background: #475569;">
@@ -201,8 +206,8 @@
                 </select>
             </div>
             <div style="display:flex; gap: 5px; margin-top: 5px;">
-                <button class="btn" style="background:#1e293b;" onclick="applySize(5)"><i class="fa-solid fa-plus"></i> Phóng to</button>
-                <button class="btn" style="background:#1e293b;" onclick="applySize(-5)"><i class="fa-solid fa-minus"></i> Thu nhỏ</button>
+                <button class="btn" style="background:#1e293b;" onclick="applySize(5)"><i class="fa-solid fa-plus"></i> To lên</button>
+                <button class="btn" style="background:#1e293b;" onclick="applySize(-5)"><i class="fa-solid fa-minus"></i> Nhỏ đi</button>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
                 <div>
@@ -225,7 +230,7 @@
 
         <div class="page-navigation">
             <button class="btn" style="width:90px; margin:0;" onclick="turnPage(-1)"><i class="fa-solid fa-chevron-left"></i> Trước</button>
-            <div class="page-indicator" id="pageIndicator">Đang tải trang...</div>
+            <div class="page-indicator" id="pageIndicator">Đang kết nối...</div>
             <button class="btn" style="width:90px; margin:0;" onclick="turnPage(1)">Sau <i class="fa-solid fa-chevron-right"></i></button>
         </div>
 
@@ -244,8 +249,8 @@
         </div>
 
         <div class="owner-modal" id="approvalModal">
-            <h4><i class="fa-solid fa-bell-style var(--owner-color)"></i> Yêu cầu truy cập phòng</h4>
-            <p style="margin: 0; font-size: 12px; color: #cbd5e1;" id="approvalModalText">Một người dùng đang chờ bạn cấp quyền...</p>
+            <h4><i class="fa-solid fa-bell" style="color:var(--owner-color)"></i> Yêu cầu truy cập phòng</h4>
+            <p style="margin: 0; font-size: 12px; color: #cbd5e1;" id="approvalModalText">Một thiết bị đang chờ bạn cấp quyền...</p>
             <div class="modal-actions">
                 <button style="background: #10b981; color: white;" onclick="approveGuest('editor')">Cho Sửa</button>
                 <button style="background: #3b82f6; color: white;" onclick="approveGuest('viewer')">Cho Xem</button>
@@ -255,12 +260,12 @@
     </div>
 
     <script>
+        // Cấu hình tài khoản truyền dữ liệu Ably Realtime
         let ably = new Ably.Realtime('h3sO_g.W8vN2A:vLbe_Z6u1ZfscwM-N-iO7R7mS4X8g17oNOnK7952jXw');
         let channel = null;
-        let roomCode = '888999';
+        let roomCode = '';
         
-        // LOGIC PHÂN QUYỀN CHỦ SỞ HỮU TRUYỆT ĐỐI
-        let myRole = 'viewer'; // Quy cách phân quyền mặc định ban đầu: viewer, editor, owner, pending
+        let myRole = 'viewer'; // Mặc định vai trò ban đầu
         let myClientId = 'user_' + Math.random().toString(36).substr(2, 5);
         let currentPendingGuest = null;
         let defaultPolicy = 'pending'; 
@@ -268,6 +273,7 @@
         let isTurning = false;
         let selectedId = null;
 
+        // Cấu trúc dữ liệu mặc định của Sổ Tay
         let notebook = {
             currentPagePair: 0,
             pages: [
@@ -280,65 +286,96 @@
             ]
         };
 
-        // Danh sách icon giả lập Flaticon
+        // Kho dữ liệu biểu tượng mở rộng phong cách Flaticon
         const mockFlaticonDb = [
             "fa-star", "fa-heart", "fa-crown", "fa-fire", "fa-bolt", "fa-gift", "fa-cat", "fa-mug-hot",
             "fa-ghost", "fa-leaf", "fa-smile", "fa-sun", "fa-moon", "fa-cloud", "fa-umbrella", "fa-music",
             "fa-book", "fa-pen", "fa-cookie-bite", "fa-cake-candles", "fa-ice-cream", "fa-pizza-slice", "fa-gem", "fa-trophy"
         ];
 
+        // TỰ ĐỘNG KHỞI TẠO VÀ XÁC THỰC QUYỀN CHỦ SỞ HỮU (BẢO MẬT GITHUB PAGES)
         function initAppConfig() {
             const urlParams = new URLSearchParams(window.location.search);
             const roomParam = urlParams.get('room');
-            if (roomParam) roomCode = roomParam;
+            
+            if (roomParam) {
+                roomCode = roomParam;
+            } else {
+                // Nếu vào link gốc (Chưa có phòng), tự sinh phòng ngẫu nhiên từ 100000 đến 999999
+                roomCode = Math.floor(100000 + Math.random() * 900000).toString();
+            }
 
-            // Xác định Chủ sở hữu duy nhất: Ai giữ tham số bí mật ?role=owner hoặc người tạo link gốc
-            const roleParam = urlParams.get('role');
-            if (roleParam === 'owner' || !roomParam) {
+            // Kiểm tra dấu vết LocalStorage trên máy để nhận diện chủ phòng vĩnh viễn
+            const isRoomOwner = localStorage.getItem('owner_of_room_' + roomCode);
+
+            if (isRoomOwner === 'true' || !roomParam) {
                 myRole = 'owner';
+                localStorage.setItem('owner_of_room_' + roomCode, 'true'); // Lưu dấu vĩnh viễn trên thiết bị này
+                
                 document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-crown" style="color:var(--owner-color)"></i> Bạn là Chủ Sở Hữu';
                 document.getElementById("ownerSettings").style.display = "block";
+                
+                // Đổi link trên thanh địa chỉ thành link phòng để copy chia sẻ
+                if(!roomParam) {
+                    window.history.pushState({}, '', '?room=' + roomCode);
+                }
             } else {
+                // Khách truy cập sau qua link phòng nhận được từ bạn
                 myRole = 'pending';
                 document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-hourglass-half" style="color:#94a3b8"></i> Đang chờ Chủ duyệt...';
-                applyPermissionUI(false);
+                applyPermissionUI(false); // Khóa tính năng chỉnh sửa
             }
         }
 
+        // ĐỒNG BỘ HÓA DỮ LIỆU CHUẨN THỜI GIAN THỰC (REALTIME & LOCALSTORAGE SYNC)
         function connectRealtime() {
-            channel = ably.channels.get('sotay_3d_premium_' + roomCode);
+            channel = ably.channels.get('sotay_3d_premium_v2_' + roomCode);
             document.getElementById("roomDisplay").innerText = "Mã phòng: " + roomCode;
 
-            // Đăng ký nhận luồng kiểm soát quyền hạn
+            // Kênh quản lý và xét duyệt thành viên
             channel.subscribe('permission_channel', (msg) => {
                 let data = msg.data;
                 if (myRole === 'owner' && data.type === 'request_access') {
-                    handleAccessRequest(data);
+                    if (defaultPolicy === 'pending') {
+                        currentPendingGuest = data.clientId;
+                        document.getElementById("approvalModalText").innerText = `Thiết bị [${data.clientId}] muốn xin vào phòng của bạn.`;
+                        document.getElementById("approvalModal").style.display = "flex";
+                    } else {
+                        channel.publish('permission_channel', { type: 'grant_access', targetId: data.clientId, role: defaultPolicy });
+                    }
                 }
+                
                 if (data.type === 'grant_access' && data.targetId === myClientId) {
                     myRole = data.role;
-                    if(myRole === 'editor' || myRole === 'owner') {
+                    if(myRole === 'editor') {
                         document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-user-pen" style="color:#10b981"></i> Người chỉnh sửa';
                         applyPermissionUI(true);
                     } else if(myRole === 'viewer') {
                         document.getElementById("roleDisplay").innerHTML = '<i class="fa-solid fa-user-tie" style="color:#3b82f6"></i> Người xem (Chỉ đọc)';
                         applyPermissionUI(false);
                     } else {
-                        alert("Yêu cầu tham gia phòng của bạn đã bị từ chối.");
-                        window.location.reload();
+                        alert("Yêu cầu vào phòng bị từ chối.");
+                        window.location.href = window.location.pathname;
                     }
                 }
             });
 
+            // Gửi tín hiệu đồng bộ hóa ban đầu
             if (myRole === 'owner') {
-                channel.publish('request_sync', { sender: myClientId });
+                // Nếu chủ phòng quay lại, khôi phục từ bộ nhớ Cloud hoặc Local của chủ
+                let savedData = localStorage.getItem('notebook_backup_' + roomCode);
+                if(savedData) notebook = JSON.parse(savedData);
+                channel.publish('sync_response', { pages: notebook.pages });
             } else {
-                channel.publish('permission_channel', { type: 'request_access', clientId: myClientId, policy: defaultPolicy });
+                // Khách phát tín hiệu xin quyền vào phòng
+                channel.publish('permission_channel', { type: 'request_access', clientId: myClientId });
             }
 
+            // Lắng nghe các thay đổi đồng bộ trên hệ thống sách
             channel.subscribe('update', (msg) => {
                 if (!isTurning) {
                     notebook.pages = msg.data.pages;
+                    if(myRole === 'owner') localStorage.setItem('notebook_backup_' + roomCode, JSON.stringify(notebook));
                     renderBook3D();
                 }
             });
@@ -348,23 +385,13 @@
             channel.subscribe('sync_response', (msg) => {
                 if (!isTurning) {
                     notebook.pages = msg.data.pages;
+                    if(myRole === 'owner') localStorage.setItem('notebook_backup_' + roomCode, JSON.stringify(notebook));
                     renderBook3D();
                 }
             });
 
             renderBook3D();
             setupPasteEvent();
-        }
-
-        // QUẢN LÝ PHÊ DUYỆT CỦA OWNER
-        function handleAccessRequest(data) {
-            if (defaultPolicy === 'pending') {
-                currentPendingGuest = data.clientId;
-                document.getElementById("approvalModalText").innerText = `Thiết bị [${data.clientId}] muốn xin vào phòng của bạn.`;
-                document.getElementById("approvalModal").style.display = "flex";
-            } else {
-                channel.publish('permission_channel', { type: 'grant_access', targetId: data.clientId, role: defaultPolicy });
-            }
         }
 
         function approveGuest(roleType) {
@@ -394,23 +421,23 @@
 
         function sync() {
             if(myRole !== 'owner' && myRole !== 'editor') return;
+            if(myRole === 'owner') localStorage.setItem('notebook_backup_' + roomCode, JSON.stringify(notebook));
             if(channel) channel.publish('update', { pages: notebook.pages });
             renderBook3D();
         }
 
-        // TẢI ẢNH TỪ MÁY & KHỬ HOÀN TOÀN NHẬP URL
+        // TẢI ẢNH TỪ FILE MÁY TÍNH
         function uploadLocalImage(event) {
             let file = event.target.files[0];
             if (!file) return;
             let reader = new FileReader();
             reader.onload = function(e) {
-                let base64Url = e.target.result;
-                addNewElement('image', base64Url);
+                addNewElement('image', e.target.result);
             }
             reader.readAsDataURL(file);
         }
 
-        // DÁN ẢNH TRỰC TIẾP TỪ CLIPBOARD (PASTE IMAGE)
+        // DÁN ẢNH TRỰC TIẾP TỪ BÀN PHÍM (PASTE IMAGE)
         function setupPasteEvent() {
             window.addEventListener('paste', function(e) {
                 if(myRole !== 'owner' && myRole !== 'editor') return;
@@ -428,7 +455,7 @@
             });
         }
 
-        // BỘ LỌC ICON TRỰC QUAN THEO MẪU FLATICON
+        // BỘ LỌC TÌM KIẾM ICON FLATICON-STYLE
         function filterIcons() {
             let q = document.getElementById("iconSearchInput").value.toLowerCase();
             let grid = document.getElementById("iconLibraryGrid");
@@ -445,6 +472,7 @@
             });
         }
 
+        // HÌNH ẢNH DỰNG KHUNG 3D CUỐN SÁCH
         function renderBook3D() {
             let leftIdx = notebook.currentPagePair * 2;
             let rightIdx = leftIdx + 1;
@@ -615,6 +643,7 @@
             parentContainer.appendChild(el);
         }
 
+        // ĐIỀU KHIỂN HÀM LẬT TRANG SÁCH 0.75S KHÔNG BỊ TRỄ LOAD
         function turnPage(dir) {
             if (isTurning) return;
             let target = notebook.currentPagePair + dir;
